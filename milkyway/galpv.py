@@ -37,19 +37,20 @@ def angle_clockwise(A, B):
 # checking python version
 assert sys.version_info[0] >= 3
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-r','--resolution',dest='r',default=5,type=float)
-parser.add_argument('-sd','--startdegree',type=float,dest='sd',required=True)
-parser.add_argument('-ed','--enddegree',type=float,dest='ed',required=True)
-parser.add_argument('-d', '--direction',type=str, default="+",dest='d')
-parser.add_argument('-i', '--integration',type=int, default=120,dest='i')
-parser.add_argument('--debug',action='store_true')
+parser = argparse.ArgumentParser('Will create the srt.cat and the srt command file for galaxy observing')
+parser.add_argument('-r','--resolution',dest='r',default=5,type=float,help='Resolution Element (use >1 please)')
+parser.add_argument('-sd','--startdegree',type=float,dest='sd',required=True,help='Starting degree along galactic plane')
+parser.add_argument('-ed','--enddegree',type=float,dest='ed',required=True,help='Ending degree along galactic plane')
+parser.add_argument('-vd','--verticaldeg',type=float,dest='vd',default=0,help='The degree value above or below galactic plane to map (only does a single pass per vd)')
+parser.add_argument('-d', '--direction',type=str, default="+",dest='d',help='Positive or negative direction of mapping plane (0->360 is + ; 180 -> 90 is -')
+parser.add_argument('-i', '--integration',type=int, default=120,dest='i',help='Integration times')
+parser.add_argument('--debug',action='store_true',help='Debug helper')
 args = parser.parse_args()
 
 if args.d == '+':
-    outname = "galpv_{}_p_{}".format(args.sd,args.ed)
+    outname = "galpv_{}_p_{}".format(''.join(str(args.sd).split('.')),''.join(str(args.ed).split('.')))
 else:
-    outname = "galpv_{}_m_{}".format(args.sd,args.ed)
+    outname = "galpv_{}_m_{}".format(''.join(str(args.sd).split('.')),''.join(str(args.ed).split('.')))
 
 assert args.d in ['-','+']
 start = args.sd%360
@@ -96,7 +97,7 @@ with open(outname+'.cat','w') as f:
     f.write('SOU 00 00 00  00 00 00 Sun\n')
     f.write('\n')
     for i in final:
-        f.write("GALACTIC {} 0.0 G{}\n".format(round(i,2),round(i,2)))
+        f.write("GALACTIC {} {} G{}\n".format(round(i,2),round(args.vd,2),round(i,2)))
     f.write('\n')
     f.write('NOPRINTOUT\n')
     f.write('BEAMWIDTH 5\n')
