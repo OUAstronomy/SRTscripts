@@ -11,6 +11,7 @@ Misc  : Will create an appropriate srt.cat and command file for
 import sys
 import argparse
 import math as m
+import numpy as np
 from math import acos,sqrt,pi,cos,sin
 
 def ang_vec(deg):
@@ -34,60 +35,103 @@ def angle_clockwise(A, B):
     else: # if the det > 0 then A is immediately clockwise of B
         return 360-inner
 
-# checking python version
-assert sys.version_info[0] >= 3
-
 parser = argparse.ArgumentParser('Will create the srt.cat and the srt command file for galaxy observing')
-parser.add_argument('-r','--resolution',dest='r',default=5,type=float,help='Resolution Element (use >1 please)')
-parser.add_argument('-sd','--startdegree',type=float,dest='sd',required=True,help='Starting degree along galactic plane')
-parser.add_argument('-ed','--enddegree',type=float,dest='ed',required=True,help='Ending degree along galactic plane')
-parser.add_argument('-vd','--verticaldeg',type=float,dest='vd',default=0,help='The degree value above or below galactic plane to map (only does a single pass per vd)')
+parser.add_argument('-r','--resolution',dest='r',default=5,type=float,help='Resolution Element (use >1 please) or set to Nyquist sampling for best results')
+parser.add_argument('-b','--box',dest='b',action='store_true',help='Toggle the use of boxes vs tracks.')
+parser.add_argument('-sd','--startdegree',dest='sd',required=True,help='Starting degree along galactic plane. Input either float (starting Long) or [float,float] (starting box corner)')
+parser.add_argument('-ed','--enddegree',dest='ed',required=True,help='Ending degree along galactic plane. Input either float (ending Long) or [float,float] (ending box corner)')
+parser.add_argument('-vo','--verticaloffset',type=float,dest='vo',default=0,help='The degree value above or below galactic plane to map (only does a single pass per vo). Only use with long tracks')
 parser.add_argument('-d', '--direction',type=str, default="+",dest='d',help='Positive or negative direction of mapping plane (0->360 is + ; 180 -> 90 is -')
 parser.add_argument('-i', '--integration',type=int, default=120,dest='i',help='Integration times')
 parser.add_argument('--debug',action='store_true',help='Debug helper')
 args = parser.parse_args()
 
-if args.d == '+':
-    outname = "galpv_{}_p_{}".format(''.join(str(args.sd).split('.')),''.join(str(args.ed).split('.')))
-else:
-    outname = "galpv_{}_m_{}".format(''.join(str(args.sd).split('.')),''.join(str(args.ed).split('.')))
-
 assert args.d in ['-','+']
-start = args.sd%360
-end   = args.ed%360
-
+if ((360./args.r) % 1) != 0:
+    print('Resolution is improper <1, will still generate file with 1deg res')
+if args.d == '+':
+    outname = "mw_{}_p_{}_{}".format(str(args.sd).replace('[','').replace(']','').replace(',','').replace('.',''),str(args.ed).replace('[','').replace(']','').replace(',','').replace('.',''),str(args.vo).replace('.',''))
+else:
+    outname = "mw_{}_m_{}_{}".format(str(args.sd).replace('[','').replace(']','').replace(',','').replace('.',''),str(args.ed).replace('[','').replace(']','').replace(',','').replace('.',''),str(args.vo).replace('.',''))
 
 # make degree array
-if ((360./args.r) % 1) != 0:
-    print('Resolution is improper, will still generate file')
-alldegrees = [round(x*args.r,2) for x in range(int(360./args.r))]
+if not args.b :
+    start = float(args.sd)%360
+    end   = float(args.ed)%360
+    alldegrees = [round(x*args.r,2) for x in range(int(360./args.r))]
 
-if args.d == "+":# positive direction
-    diff = round(angle_clockwise(ang_vec(start),ang_vec(end)),2)
-    numd = int(m.ceil(diff/args.r))
-    final = [round((start + x*args.r),2)%360 for x in range(numd)]
+    if args.d == "+":# positive direction
+        diff = round(angle_clockwise(ang_vec(start),ang_vec(end)),2)
+        numd = int(m.ceil(diff/args.r))+1
+        final = [round((start + x*args.r),2)%360 for x in range(numd)]
 
-elif args.d == "-": # negative direction
-    diff = round(360.-angle_clockwise(ang_vec(start),ang_vec(end)),2)
-    numd = int(m.ceil(diff/args.r))
-    final = [round((start - x*args.r),2)%360  for x in range(numd)]
+    elif args.d == "-": # negative direction
+        diff = round(360.-angle_clockwise(ang_vec(start),ang_vec(end)),2)
+        numd = int(m.ceil(diff/args.r))+1
+        final = [round((start - x*args.r),2)%360  for x in range(numd)]
+ 
+    alldegrees = [[args.vo,x] for x in final]
+    # CMD file creation
+    totaltime=len(final)*args.i
+    if totaltime >= 21600:
+        print('Please split up the desired tracks to smaller increments, this is a large program')
+    with open(outname+'_cmd.txt','w') as f:
+        f.write(': record ./{}\n'.format(outname+'.dat'))
+        for i,x in alldegrees:
+            f.write(':{} G{}\n'.format(args.i,x))
+        f.write(':roff\n')
+        f.write(':stow\n')
+        f.write('')
+else:
+    startb = map(float,args.sd.strip('[').strip(']').split(','))
+    startb[0] = startb[0]%360
+    endb = map(float,args.ed.strip('[').strip(']').split(','))
+    endb[0] = endb[0]%360
+    start,end = startb[0],endb[0]
+    vstart,vend = startb[1],endb[1]
+    vdiff = round(angle_clockwise(ang_vec(vstart),ang_vec(vend)),2)
+    numvp = int(m.ceil(vdiff/args.r))+1
+    
+    if startb[1] < endb[1]:
+        verticalrange = [x for x in np.linspace(vstart, vend,endpoint=True,num=numvp)]
+    else:
+        verticalrange = [x for x in np.linspace(vstart, vend,endpoint=True,num=numvp)]
+        verticalrange = verticalrange[::-1]
 
-if end != 0:
-    final.append(end)
+    alldegrees = []
+    for i,lat in enumerate(verticalrange):
+        if args.d == "+":# positive direction
+            diff = round(angle_clockwise(ang_vec(start),ang_vec(end)),2)
+            numd = int(m.ceil(diff/args.r))+1
+            final = [round((start + x*args.r),2)%360 for x in range(numd)]
 
-print(diff,numd,start,end)
+        elif args.d == "-": # negative direction
+            diff = round(360.-angle_clockwise(ang_vec(start),ang_vec(end)),2)
+            numd = int(m.ceil(diff/args.r))+1
+            final = [round((start - x*args.r),2)%360  for x in range(numd)]
 
-# CMD file creation
-totaltime=len(final)*args.i
+        if lat%2 != 0: # negative direction
+            final = final[::-1]
+
+        if i == 0:
+            totaltime = len(final)*len(verticalrange)*args.r
+            if totaltime >= 21600:
+                print('Please split up the desired tracks to smaller increments, this is a large program')
+        for x in final:
+            alldegrees.append([lat,x])
+
+
+print("Total Time: {}s ".format(totaltime))
+print('Made files {0}.cat {0}_cmd.txt'.format(outname))
+
+# write command file
 with open(outname+'_cmd.txt','w') as f:
     f.write(': record ./{}\n'.format(outname+'.dat'))
-    for x in final:
-        f.write(':{} G{}\n'.format(args.i,x))
+    for i,x in alldegrees:
+        f.write(':{0} G{1}_{2}\n'.format(args.i,''.join(str(round(i,2)).split('.')),''.join(str(round(x,2)).split('.'))))
     f.write(':roff\n')
     f.write(':stow\n')
     f.write('')
-
-print("Total Time: {}s ".format(totaltime))  
 
 # making srt.cat file
 with open(outname+'.cat','w') as f:
@@ -96,8 +140,8 @@ with open(outname+'.cat','w') as f:
     f.write('STATION 35.207 97.44 Sooner_Station\n')
     f.write('SOU 00 00 00  00 00 00 Sun\n')
     f.write('\n')
-    for i in final:
-        f.write("GALACTIC {} {} G{}\n".format(round(i,2),round(args.vd,2),round(i,2)))
+    for i,x in alldegrees:
+        f.write("GALACTIC {0} {1} G{2}_{3}\n".format(round(i,2),round(x,2),''.join(str(round(i,2)).split('.')),''.join(str(round(x,2)).split('.'))))
     f.write('\n')
     f.write('NOPRINTOUT\n')
     f.write('BEAMWIDTH 5\n')
