@@ -70,13 +70,13 @@ if not args.b :
         numd = int(m.ceil(diff/args.r))+1
         final = [round((start - x*args.r),2)%360  for x in range(numd)]
  
-    alldegrees = [[args.vo,x] for x in final]
+    alldegrees = [[x,args.vo] for x in final]
     # CMD file creation
     totaltime=len(final)*args.i
     if totaltime >= 21600:
         print('Please split up the desired tracks to smaller increments, this is a large program')
     with open(outname+'_cmd.txt','w') as f:
-        f.write(': record ./{}\n'.format(outname+'.dat'))
+        f.write(': record ./{}\n'.format(outname+'.rad'))
         for i,x in alldegrees:
             f.write(':{} G{}\n'.format(args.i,x))
         f.write(':roff\n')
@@ -118,7 +118,7 @@ else:
             if totaltime >= 21600:
                 print('Please split up the desired tracks to smaller increments, this is a large program')
         for x in final:
-            alldegrees.append([lat,x])
+            alldegrees.append([x,lat])
 
 
 print("Total Time: {}s ".format(totaltime))
@@ -139,6 +139,9 @@ with open(outname+'.cat','w') as f:
     f.write('CALMODE 20\n')
     f.write('STATION 35.207 97.44 Sooner_Station\n')
     f.write('SOU 00 00 00  00 00 00 Sun\n')
+    f.write('SOU 02 23 17 61 38 54 W3 1950    // strongest OH line 1665.4 MHz -44 km/s \n')
+    f.write('GALACTIC 132 -1 S7     // hydrogen line calibration region\n')
+    f.write('GALACTIC 207 -15 S8    // hydrogen line calibration region\n')
     f.write('\n')
     for i,x in alldegrees:
         f.write("GALACTIC {0} {1} G{2}_{3}\n".format(round(i,2),round(x,2),''.join(str(round(i,2)).split('.')),''.join(str(round(x,2)).split('.'))))
@@ -150,7 +153,9 @@ with open(outname+'.cat','w') as f:
     f.write('ELLIMITS 0 90.0\n')
     f.write('STOWPOS 90 2\n')
     f.write('TSYS 125    \n')
-    f.write('TCAL 1200    // should equal ambient load\n')
+    f.write('TCAL 1200    // conservative noise diode temp\n')
+    f.write('*TCAL 1650   // possible new temp\n')
+    f.write('*TCAL 300    // vane calibrator\n')
     f.write('RECORD 5 SPEC\n')
     f.write('NUMFREQ 256    // good choice for dongle\n')
     f.write('BANDWIDTH 2.0\n')
@@ -165,3 +170,4 @@ with open(outname+'.cat','w') as f:
 
 #############
 # end of file
+
