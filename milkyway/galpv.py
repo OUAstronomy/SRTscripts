@@ -78,7 +78,7 @@ if not args.b :
     if totaltime >= 21600:
         print('Please split up the desired tracks to smaller increments, this is a large program')
     with open(outname+'_cmd.txt','w') as f:
-        f.write(': record ./{}\n'.format(outname+'.rad'))
+        f.write(': record \n')
         for i,x in alldegrees:
             f.write(':{} G{}\n'.format(args.i,x))
         f.write(':roff\n')
