@@ -85,9 +85,9 @@ if not args.b :
         f.write(':stow\n')
         f.write('')
 else:
-    startb = map(float,args.sd.strip('[').strip(']').split(','))
+    startb = [x for x in map(float,args.sd.strip('[').strip(']').split(','))]
     startb[0] = startb[0]%360
-    endb = map(float,args.ed.strip('[').strip(']').split(','))
+    endb = [x for x in map(float,args.ed.strip('[').strip(']').split(','))]
     endb[0] = endb[0]%360
     start,end = startb[0],endb[0]
     vstart,vend = startb[1],endb[1]
