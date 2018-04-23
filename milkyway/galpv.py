@@ -74,9 +74,6 @@ if not args.b :
  
     alldegrees = [[x,args.vo] for x in final]
     # CMD file creation
-    totaltime=len(final)*args.i
-    if totaltime >= 21600:
-        print('Please split up the desired tracks to smaller increments, this is a large program')
     with open(outname+'_cmd.txt','w') as f:
         f.write(': record \n')
         for i,x in alldegrees:
@@ -115,18 +112,16 @@ else:
 
         if count%2 == 1: # negative direction
             final = final[::-1]
-        #print(lat,final[0])
 
-        if i == 0:
-            totaltime = len(final)*len(verticalrange)*args.r
-            if totaltime >= 21600:
-                print('Please split up the desired tracks to smaller increments, this is a large program')
         for x in final:
             alldegrees.append([x,lat])
         count += 1
 
+totaltime = round(len(alldegrees)*args.i,3)
+if totaltime >= 21600:
+    print('Please split up the desired tracks to smaller increments, this is a large program')
 
-print("Total Time: {}s ".format(totaltime))
+print("Total Time: {}s...with slew: {}s ".format(totaltime,round(totaltime*1.1,3)))
 print('Made files {0}.cat {0}_cmd.txt'.format(outname))
 
 # write command file
