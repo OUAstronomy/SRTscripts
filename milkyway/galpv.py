@@ -115,7 +115,7 @@ else:
 
         if count%2 == 1: # negative direction
             final = final[::-1]
-        print(lat,final[0])
+        #print(lat,final[0])
 
         if i == 0:
             totaltime = len(final)*len(verticalrange)*args.r
