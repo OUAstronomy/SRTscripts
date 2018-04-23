@@ -131,7 +131,7 @@ print('Made files {0}.cat {0}_cmd.txt'.format(outname))
 
 # write command file
 with open(outname+'_cmd.txt','w') as f:
-    f.write(': record ./{}\n'.format(outname+'.dat'))
+    f.write(': record \n')
     for i,x in alldegrees:
         f.write(':{0} G{1}_{2}\n'.format(args.i,''.join(str(round(i,2)).split('.')),''.join(str(round(x,2)).split('.'))))
     f.write(':roff\n')
