@@ -61,7 +61,7 @@ for x in files:
     final.append(['G'+alllines[0].split('G')[1].strip('\n'),alllines[-1]])
 
 # function for formatting
-def addspace(sstring,spacing=15):
+def addspace(sstring,spacing=args.s):
     while True:
         if len(sstring) >= spacing:
             sstring = sstring[:-1]
