@@ -101,6 +101,7 @@ else:
         verticalrange = verticalrange[::-1]
 
     alldegrees = []
+    count = 0
     for i,lat in enumerate(verticalrange):
         if args.d == "+":# positive direction
             diff = round(angle_clockwise(ang_vec(start),ang_vec(end)),2)
@@ -112,8 +113,9 @@ else:
             numd = int(m.ceil(diff/args.r))+1
             final = [round((start - x*args.r),2)%360  for x in range(numd)]
 
-        if lat%2 != 0: # negative direction
+        if count%2 == 1: # negative direction
             final = final[::-1]
+        print(lat,final[0])
 
         if i == 0:
             totaltime = len(final)*len(verticalrange)*args.r
@@ -121,6 +123,7 @@ else:
                 print('Please split up the desired tracks to smaller increments, this is a large program')
         for x in final:
             alldegrees.append([x,lat])
+        count += 1
 
 
 print("Total Time: {}s ".format(totaltime))
