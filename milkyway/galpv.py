@@ -121,7 +121,7 @@ totaltime = round(len(alldegrees)*args.i,3)
 if totaltime >= 21600:
     print('Please split up the desired tracks to smaller increments, this is a large program')
 
-print("Total Time: {}s...with slew: {}s ".format(totaltime,round(totaltime*1.1,3)))
+print("Total Time: {}s...with slew: {}s = {}m".format(totaltime,round(totaltime*1.1,3),round(totaltime*1.1/60.,3)))
 print('Made files {0}.cat {0}_cmd.txt'.format(outname))
 
 # write command file
