@@ -20,13 +20,17 @@ def ang_vec(deg):
 def length(v):
     return sqrt(v[0]**2+v[1]**2)
 def dot_product(v,w):
-   return v[0]*w[0]+v[1]*w[1]
+    return v[0]*w[0]+v[1]*w[1]
 def determinant(v,w):
-   return v[0]*w[1]-v[1]*w[0]
+    return v[0]*w[1]-v[1]*w[0]
 def inner_angle(v,w):
-   cosx=dot_product(v,w)/(length(v)*length(w))
-   rad=acos(cosx) # in radians
-   return rad*180/pi # returns degrees
+    cosx=dot_product(v,w)/(length(v)*length(w))
+    while np.abs(cosx) >= 1:
+        cosx = cosx/(np.abs(cosx)*1.001)
+
+    rad=acos(cosx) # in radians
+
+    return rad*180/pi # returns degrees
 def angle_clockwise(A, B):
     inner=inner_angle(A,B)
     det = determinant(A,B)
@@ -121,6 +125,7 @@ totaltime = round(len(alldegrees)*args.i,3)
 if totaltime >= 21600:
     print('Please split up the desired tracks to smaller increments, this is a large program')
 
+print('Number of pointings: {}'.format(len(alldegrees)))
 print("Total Time: {}s...with slew: {}s = {}m".format(totaltime,round(totaltime*1.1,3),round(totaltime*1.1/60.,3)))
 print('Made files {0}.cat {0}_cmd.txt'.format(outname))
 
