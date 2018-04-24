@@ -45,6 +45,7 @@ parser.add_argument('-d', '--direction',type=str, default="+",dest='d',help='Pos
 parser.add_argument('-i', '--integration',type=int, default=120,dest='i',help='Integration times')
 parser.add_argument('-sp','--stowpos',type=str,default="90,20",dest='sp',help='Set the stow position to a new stow')
 parser.add_argument('-tc','--tcal',type=int,default=1200,dest='tcal',help='Set the TCAL for the cat file')
+parser.add_argument('-rf','--ref',type=str,dest='ref',help='Observe a reference region found in the cat file int,name.')
 parser.add_argument('--debug',action='store_true',help='Debug helper')
 args = parser.parse_args()
 
@@ -73,14 +74,7 @@ if not args.b :
         final = [round((start - x*args.r),2)%360  for x in range(numd)]
  
     alldegrees = [[x,args.vo] for x in final]
-    # CMD file creation
-    with open(outname+'_cmd.txt','w') as f:
-        f.write(': record \n')
-        for i,x in alldegrees:
-            f.write(':{} G{}\n'.format(args.i,x))
-        f.write(':roff\n')
-        f.write(':stow\n')
-        f.write('')
+
 else:
     startb = [x for x in map(float,args.sd.strip('[').strip(']').split(','))]
     startb[0] = startb[0]%360
@@ -124,11 +118,18 @@ if totaltime >= 21600:
 print("Total Time: {}s...with slew: {}s = {}m".format(totaltime,round(totaltime*1.1,3),round(totaltime*1.1/60.,3)))
 print('Made files {0}.cat {0}_cmd.txt'.format(outname))
 
+def naming(i,x):
+    # naming GLON GLAT  GGLON_GLAT ie for 112.5 2.5 G1125_25
+    return '{}_{}'.format(''.join(str(round(i,2)).split('.')),\
+                          ''.join(str(round(x,2)).split('.')))
+
 # write command file
 with open(outname+'_cmd.txt','w') as f:
     f.write(': record \n')
     for i,x in alldegrees:
-        f.write(':{0} G{1}_{2}\n'.format(args.i,''.join(str(round(i,2)).split('.')),''.join(str(round(x,2)).split('.'))))
+        f.write(':{} G{}\n'.format(args.i,naming(i,x)))
+    if args.ref:
+        f.write(':{}\n'.format(' '.join(args.ref.split(','))))
     f.write(':roff\n')
     f.write(':stow\n')
     f.write('')
@@ -143,8 +144,8 @@ with open(outname+'.cat','w') as f:
     f.write('GALACTIC 132 -1 S7     // hydrogen line calibration region\n')
     f.write('GALACTIC 207 -15 S8    // hydrogen line calibration region\n')
     f.write('\n')
-    for i,x in alldegrees:
-        f.write("GALACTIC {0} {1} G{2}_{3}\n".format(round(i,2),round(x,2),''.join(str(round(i,2)).split('.')),''.join(str(round(x,2)).split('.'))))
+    for i,x in alldegrees: # format GLON GLAT  GGLON_GLAT ie for 112.5 2.5 G1125_25
+        f.write("GALACTIC {0} G{1}\n".format(' '.join(naming(i,x).split('_')),naming(i,x)))
     f.write('\n')
     f.write('NOPRINTOUT\n')
     f.write('BEAMWIDTH 5\n')

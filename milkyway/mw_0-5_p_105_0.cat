@@ -1,0 +1,55 @@
+BIGRAS
+CALMODE 20
+STATION 35.207 97.44 Sooner_Station
+SOU 00 00 00  00 00 00 Sun
+SOU 02 23 17 61 38 54 W3 1950    // strongest OH line 1665.4 MHz -44 km/s 
+GALACTIC 132 -1 S7     // hydrogen line calibration region
+GALACTIC 207 -15 S8    // hydrogen line calibration region
+
+GALACTIC 00 -50 G00_-50
+GALACTIC 25 -50 G25_-50
+GALACTIC 50 -50 G50_-50
+GALACTIC 75 -50 G75_-50
+GALACTIC 100 -50 G100_-50
+GALACTIC 100 -25 G100_-25
+GALACTIC 75 -25 G75_-25
+GALACTIC 50 -25 G50_-25
+GALACTIC 25 -25 G25_-25
+GALACTIC 00 -25 G00_-25
+GALACTIC 00 00 G00_00
+GALACTIC 25 00 G25_00
+GALACTIC 50 00 G50_00
+GALACTIC 75 00 G75_00
+GALACTIC 100 00 G100_00
+GALACTIC 100 25 G100_25
+GALACTIC 75 25 G75_25
+GALACTIC 50 25 G50_25
+GALACTIC 25 25 G25_25
+GALACTIC 00 25 G00_25
+GALACTIC 00 50 G00_50
+GALACTIC 25 50 G25_50
+GALACTIC 50 50 G50_50
+GALACTIC 75 50 G75_50
+GALACTIC 100 50 G100_50
+
+NOPRINTOUT
+BEAMWIDTH 5
+NBSW 10
+AZLIMITS 0 360
+ELLIMITS 0 90.0
+STOWPOS 220 25
+TSYS 125    
+*TCAL 1200    // conservative noise diode temp
+*TCAL 1650   // possible new temp
+*TCAL 300    // vane calibrator
+TCAL 1200   // set calibrator
+RECORD 5 SPEC
+NUMFREQ 256    // good choice for dongle
+BANDWIDTH 2.0
+FREQUENCY 1420.406
+RESTFREQ 1420.406
+FREQCORR -0.05   // TV dongle correction
+NBLOCK 5   // number of blocks per update - can be reduced for Beagle board with slow display for PCI it is hardwired to 20
+COUNTPERSTEP 100 // to move with old SRT is steps
+ROT2SLP 2  // change rot2 sleep time to 3 seconds - default is 1 second
+NOISECAL 70 // default is 300

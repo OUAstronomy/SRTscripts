@@ -50,6 +50,7 @@ while True:
     except:
         count += 1
         if count > 10:
+            print('Couldn\'t find the files. Try with a different name or set all to *parameters.txt suffix')
             exit(0)
 
 # read in all files info
