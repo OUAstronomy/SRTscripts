@@ -180,11 +180,19 @@ if args.debug:
     import matplotlib.pyplot as plt
     plt.figure(figsize=[16,16])
     for k,val in enumerate(alldegrees):
-        i,x = [y for y in val]
         if k < (len(alldegrees)-1):
-            print([i,x],alldegrees[k+1])
-            plt.plot([i,x],alldegrees[k+1],'r-')
-            plt.plot([i,x],alldegrees[k+1],'b.')
+            i,x = [y for y in val]
+            j,p = [y for y in alldegrees[k+1]]
+            print([i,j],[x,p])
+            plt.plot([i,j],[x,p],'r-')
+            if k == 0:
+                plt.plot([i,j],[x,p],'.',color='black',label='start')
+            elif k == (len(alldegrees)-2):
+                plt.plot([i,j],[x,p],'.',color='purple',label='end')
+            else:
+                plt.plot([i,j],[x,p],'b.')
+    plt.legend()
+    plt.title('Raster Scan: {} to {}'.format(alldegrees[0],alldegrees[-1]))
     plt.show()
 
 
