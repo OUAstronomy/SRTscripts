@@ -53,9 +53,15 @@ assert args.d in ['-','+']
 if ((360./args.r) % 1) != 0:
     print('Resolution is improper <1, will still generate file with 1deg res')
 if args.d == '+':
-    outname = "mw_{}_p_{}_{}".format(str(args.sd).replace('[','').replace(']','').replace(',','').replace('.',''),str(args.ed).replace('[','').replace(']','').replace(',','').replace('.',''),str(args.vo).replace('.',''))
+    outname = "mw_{}_p_{}_{}".format(str(args.sd).replace('[','').replace(']','').replace(',','')\
+                                                 .replace('.',''),str(args.ed).replace('[','')\
+                                                 .replace(']','').replace(',','').replace('.',''),\
+                                     str(args.vo).replace('.',''))
 else:
-    outname = "mw_{}_m_{}_{}".format(str(args.sd).replace('[','').replace(']','').replace(',','').replace('.',''),str(args.ed).replace('[','').replace(']','').replace(',','').replace('.',''),str(args.vo).replace('.',''))
+    outname = "mw_{}_m_{}_{}".format(str(args.sd).replace('[','').replace(']','').replace(',','')\
+                                                 .replace('.',''),str(args.ed).replace('[','')\
+                                                 .replace(']','').replace(',','').replace('.',''),\
+                                     str(args.vo).replace('.',''))
 
 # make degree array
 if not args.b :
@@ -145,7 +151,7 @@ with open(outname+'.cat','w') as f:
     f.write('GALACTIC 207 -15 S8    // hydrogen line calibration region\n')
     f.write('\n')
     for i,x in alldegrees: # format GLON GLAT  GGLON_GLAT ie for 112.5 2.5 G1125_25
-        f.write("GALACTIC {0} G{1}\n".format(' '.join(naming(i,x).split('_')),naming(i,x)))
+        f.write("GALACTIC {0} {1} G{2}\n".format(round(i,2),round(x,2),naming(i,x)))
     f.write('\n')
     f.write('NOPRINTOUT\n')
     f.write('BEAMWIDTH 5\n')
@@ -169,6 +175,20 @@ with open(outname+'.cat','w') as f:
     f.write('ROT2SLP 2  // change rot2 sleep time to 3 seconds - default is 1 second\n')
     f.write('NOISECAL 70 // default is 300\n')
     f.write('')
+
+if args.debug:
+    import matplotlib.pyplot as plt
+    plt.figure(figsize=[16,16])
+    for k,val in enumerate(alldegrees):
+        i,x = [y for y in val]
+        if k < (len(alldegrees)-1):
+            print([i,x],alldegrees[k+1])
+            plt.plot([i,x],alldegrees[k+1],'r-')
+            plt.plot([i,x],alldegrees[k+1],'b.')
+    plt.show()
+
+
+
 
 #############
 # end of file
