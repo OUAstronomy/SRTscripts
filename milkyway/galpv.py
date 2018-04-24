@@ -183,7 +183,7 @@ if args.debug:
         if k < (len(alldegrees)-1):
             i,x = [y for y in val]
             j,p = [y for y in alldegrees[k+1]]
-            print([i,j],[x,p])
+            #print([i,j],[x,p])
             plt.plot([i,j],[x,p],'r-')
             if k == 0:
                 plt.plot([i,j],[x,p],'.',color='black',label='start')
@@ -193,7 +193,9 @@ if args.debug:
                 plt.plot([i,j],[x,p],'b.')
     plt.legend()
     plt.title('Raster Scan: {} to {}'.format(alldegrees[0],alldegrees[-1]))
-    plt.show()
+    #plt.show()
+    plt.draw()
+    plt.savefig('{}.pdf'.format(outname))
 
 
 
