@@ -186,16 +186,16 @@ if args.debug:
             #print([i,j],[x,p])
             plt.plot([i,j],[x,p],'r-')
             if k == 0:
-                plt.plot([i,j],[x,p],'.',color='black',label='start')
+                plt.plot([i,j],[x,p],'*',color='black',label='start')
             elif k == (len(alldegrees)-2):
-                plt.plot([i,j],[x,p],'.',color='purple',label='end')
+                plt.plot([i,j],[x,p],'*',color='purple',label='end')
             else:
                 plt.plot([i,j],[x,p],'b.')
     plt.legend()
     plt.title('Raster Scan: {} to {}'.format(alldegrees[0],alldegrees[-1]))
     #plt.show()
     plt.draw()
-    plt.savefig('{}.pdf'.format(outname))
+    plt.savefig('{}.png'.format(outname))
 
 
 
