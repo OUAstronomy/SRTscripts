@@ -200,9 +200,10 @@ if args.debug:
                 plt.plot([i,j],[x,p],'b.')
     plt.legend()
     plt.title('Raster Scan: {} to {}'.format(alldegrees[0],alldegrees[-1]))
-    #plt.show()
     plt.draw()
     plt.savefig('{}.png'.format(outname))
+    plt.draw()
+    plt.show()
 
 
 
