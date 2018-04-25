@@ -20,13 +20,17 @@ def ang_vec(deg):
 def length(v):
     return sqrt(v[0]**2+v[1]**2)
 def dot_product(v,w):
-   return v[0]*w[0]+v[1]*w[1]
+    return v[0]*w[0]+v[1]*w[1]
 def determinant(v,w):
-   return v[0]*w[1]-v[1]*w[0]
+    return v[0]*w[1]-v[1]*w[0]
 def inner_angle(v,w):
-   cosx=dot_product(v,w)/(length(v)*length(w))
-   rad=acos(cosx) # in radians
-   return rad*180/pi # returns degrees
+    cosx=dot_product(v,w)/(length(v)*length(w))
+    while np.abs(cosx) >= 1:
+        cosx = cosx/(np.abs(cosx)*1.001)
+
+    rad=acos(cosx) # in radians
+
+    return rad*180/pi # returns degrees
 def angle_clockwise(A, B):
     inner=inner_angle(A,B)
     det = determinant(A,B)
@@ -118,9 +122,11 @@ else:
         count += 1
 
 totaltime = round(len(alldegrees)*args.i,3)
-if totaltime >= 21600:
+if (totaltime >= 21600) or (len(alldegrees) > 200 ):
     print('Please split up the desired tracks to smaller increments, this is a large program')
+    print('Will continue to create file, but the program is known to bug with this many sources')
 
+print('Number of pointings: {}'.format(len(alldegrees)))
 print("Total Time: {}s...with slew: {}s = {}m".format(totaltime,round(totaltime*1.1,3),round(totaltime*1.1/60.,3)))
 print('Made files {0}.cat {0}_cmd.txt'.format(outname))
 
@@ -149,6 +155,7 @@ with open(outname+'.cat','w') as f:
     f.write('SOU 02 23 17 61 38 54 W3 1950    // strongest OH line 1665.4 MHz -44 km/s \n')
     f.write('GALACTIC 132 -1 S7     // hydrogen line calibration region\n')
     f.write('GALACTIC 207 -15 S8    // hydrogen line calibration region\n')
+    f.write('SOU 17 48 46 -34 25 0 S9 1950\n')
     f.write('\n')
     for i,x in alldegrees: # format GLON GLAT  GGLON_GLAT ie for 112.5 2.5 G1125_25
         f.write("GALACTIC {0} {1} G{2}\n".format(round(i,2),round(x,2),naming(i,x)))
