@@ -124,7 +124,7 @@ class plotter(object):
             answer = self.logger.pyinput("(y or [SPACE]/n or [RET]) Want to draw another lasso region")
             plt.show()
             if ((answer.lower() == "n") or (answer == "")):
-                self.save('TEMPORARY_FILE_SPECREDUC_PLOT.pdf')
+                self.save('{}_PLOT.pdf'.format(_TEMPB_))
                 break
         self.logger.waiting(auto)
         return msk_array
@@ -166,9 +166,19 @@ if __name__ == "__main__":
                   '{} Version: {} {}'.format(colours.WARNING,__version__,colours._RST_)
 
     in_help   = 'name of the file to parse'
-    spec_help = colours.OKGREEN + 'Current things to work on:\
-                \n-Make final pretty plot\
-                \nAlso add function that uses Ridge Regression to auto fit everything' + colours._RST_
+    std_help  = 'Standard spectra I.I. (k km/s) in region (km/s):\n'\
+                'S6: 261 (-5.8  ->  4.8), \n'\
+                'S7: 957 (-56.3 -> -45.8), \n'\
+                'S8: 783 (-4.6  ->  21.75), \n'\
+                'S9: 832 ( 1.0  ->  14.75) \n'
+    stdvals = { 'S6': 261.,  #(-5.8  ->  4.8), \n'\
+                'S7': 957.,  #(-56.3 -> -45.8), \n'\
+                'S8': 783.,  #(-4.6  ->  21.75), \n'\
+                'S9': 832. }#( 1.0  ->  14.75) \n'\
+    spec_help = colours.OKGREEN + \
+                'Current things to work on:\n'\
+                '-Make final pretty plot\n'\
+                '-Also add function that uses Ridge Regression to auto fit everything' + colours._RST_
     f_help    = 'The output file identifying string'
     a_help    = 'If toggled will run the script non interactively'
     log_help  = 'name of logfile with extension'
@@ -180,6 +190,7 @@ if __name__ == "__main__":
     parser.add_argument('-i', '--input', type=str, help=in_help, dest='fin',required=True)
     parser.add_argument('-o','--output',type=str, help=f_help,dest='fout',required=True)
     parser.add_argument('-w','--work', help='print things to work on',dest='work',action='store_true')
+    parser.add_argument('-s', '--stdreg', type=str, help=std_help, dest='std')
     parser.add_argument('--auto',action="store_true", help=a_help,dest='auto')
     parser.add_argument('-l', '--logger',type=str, help=log_help,dest='log')
     parser.add_argument('-v','--verbosity', help=v_help,default=2,dest='verb',type=int)
@@ -207,6 +218,17 @@ if __name__ == "__main__":
     if worki is True:
         logger.success(spec_help)
         exit()
+    if auto == True:
+        logger.failure('Auto doesn\'t work with this version. Use the specplot_mosaic')
+        auto = False
+    if args.std:
+        logger.header2(std_help)
+        logger.header2('Use these region ranges to apply a custom I.I. mask.\n'\
+                       'Sometimes the 5sigma works but sometimes not.'\
+                       'All that really matters is the width of the range is the same'\
+                       'You don\'t need the same range start and end, but the velocity'\
+                       ' width should be the same')
+        assert args.std in stdvals
 
     # version control
     #############################################################################
@@ -230,16 +252,16 @@ if __name__ == "__main__":
     logger.warn('Move these to a directory if you don\'t want these deleted')
 
     _TEMP_ = str(time.time())
-    datafile = 'TEMPORARY_FILE_SPECREDUC_{}_0.txt'.format(_TEMP_)
-    _TEMPB_ = 'TEMPORARY_FILE_SPECREDUC_{}'.format(_TEMP_)
-    _TEMP0_ = 'TEMPORARY_FILE_SPECREDUC_{}.txt'.format(_TEMP_)
-    _TEMP1_ = 'TEMPORARY_FILE_SPECREDUC_{}_1.txt'.format(_TEMP_)
-    _TEMP2_ = 'TEMPORARY_FILE_SPECREDUC_{}_2.txt'.format(_TEMP_)
+    datafile = 'TEMPORARY_FILE_SPECREDUC_{}_0.txt'.format(_TEMP_) # holds orig data
+    _TEMPB_ = 'TEMPORARY_FILE_SPECREDUC_{}'.format(_TEMP_)        # temp file name format
+    _TEMP0_ = '{}.txt'.format(_TEMPB_)                            # another data backup for manip    
+    _TEMP1_ = '{}_1.txt'.format(_TEMPB_)                          # holds current data and eventually final
+    _TEMP2_ = '{}_2.txt'.format(_TEMPB_)                          # holds parameters
     _TEMP3_ = []
 
     logger.waiting(auto)
     logger._REMOVE_(files)
-    logger._REMOVE_(_TEMP_)
+    logger._REMOVE_(_TEMPB_)
     _SYSTEM_('cp -f ' + orig_datafile + ' ' + datafile)
 
     # getting firstlines
@@ -400,7 +422,6 @@ if __name__ == "__main__":
         reset.save(_TEMPNAME)
 
         # defining corrected spectra
-        spectra_blcorr=data[col2].copy()
         spectra_blcorr=data[col2]-fit_fn(data[col1])
         maxt = max(spectra_blcorr)
         mint = min(spectra_blcorr)
@@ -690,6 +711,10 @@ if __name__ == "__main__":
         else:
             with open(_TEMP2_,'a') as _T_:
                 _T_.write('No intensity guess\n')
+        if args.std:
+            logger.header2('The standard region you got was: {} vs the accepted value: {} .\n'\
+                           'So when using this to analyze spectra, use the multiplicative'\
+                           ' fraction of {}'.format(intensity,stdvals[args.std],stdvals[args.std]/intensity))
         # write to file
         try:
             spec_final = Table([data[col3],data[col0],data[col1],data[col2],spectra_blcorr], names=('freq','vel_sub', 'vel', 'Tant_raw', 'Tant_corr'))

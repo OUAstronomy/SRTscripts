@@ -78,6 +78,7 @@ with open(args.o,'w') as f:
                               addspace('Inten. K km/s'),\
                               addspace('Error')))
     for x in final:
+        #print(x)
         formatted = '{}{}{}'.format(addspace(x[0]),\
                                     addspace(x[1].split(' +- ')[0].split(':')[1].strip(' ')\
                                                                   .strip('[').strip(']')),\
