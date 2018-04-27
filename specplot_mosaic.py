@@ -158,7 +158,9 @@ def bimodal2(x,mu1,sigma1,A1,mu2,sigma2,A2,C):
     return gauss(x,mu1,sigma1,A1)+gauss(x,mu2,sigma2,A2) + C
 def binning(data,width=3):
     return data[:(data.size // width) * width].reshape(-1, width).mean(axis=1)
-
+def find_nearest(array,value):
+    idx = (np.abs(array-value)).argmin()
+    return [idx,array[idx]]
 ####################################################################################
 # main function
 ####################################################################################
@@ -173,10 +175,14 @@ if __name__ == "__main__":
 
     in_help   = 'name of the file to parse'
     f_help    = 'The output file identifying string'
+    rfi       = np.array(
+                [[1420.949875,1420.9405],
+                 [1420.08,1420.035]])
     log_help  = 'name of logfile with extension'
     v_help    = 'Integer 1-5 of verbosity level'
     stdhelp   = 'standard region multiplication value (float): get this by reducing the data via specplot normally, '\
                 'find the integrated intensity normally and compare.'
+    rfihelp   = 'Will try to remove the rfi points that are known: {}'.format(rfi)
 
     # Initialize instance of an argument parser
     #############################################################################
@@ -185,6 +191,7 @@ if __name__ == "__main__":
     parser.add_argument('-s', '--stdreg', type=float, help=stdhelp, dest='spec',default = 1.)
     parser.add_argument('-p','--plot',  action='store_true', help='Plot all sources (warning slows computer'\
                                      ,dest='plot')
+    parser.add_argument('-r','--rfi',action="store_true", help=rfihelp,dest='rfi')
     parser.add_argument('-o','--output',  type=str, help=f_help,dest='fout',required=True)
     parser.add_argument('-l', '--logger', type=str, help=log_help,dest='log')
     parser.add_argument('-v','--verbosity', help=v_help,default=2,dest='verb',type=int)
@@ -226,6 +233,7 @@ if __name__ == "__main__":
         files = ['None',]
     logger.failure("Will remove these files: {}\n".format(' | '.join(files)))
     logger.warn('Move these to a directory if you don\'t want these deleted')
+    logger.waiting(auto)
 
     _TEMP_ = str(time.time())
     datafile = 'TEMPORARY_FILE_SPECREDUC_{}_0.txt'.format(_TEMP_) # holds orig data
@@ -261,8 +269,36 @@ if __name__ == "__main__":
     rfi_regions = '' # this will hold the x values for the rfi to remove
     fullrms     = '' # holds the rms 
     total_num = 0
+
+    # starting at non-zero source
+    #############################################################################
+    acstart = ''
+    countings = 0
+    while True:
+        try:
+            newstart = logger.pyinput('(y or [SPACE]/[RET] or n) Do you wish to start at a source')
+            if(newstart == ' ' ) or (newstart.lower() == 'y'):
+                acstart = logger.pyinput('Input source exactly')
+            else:
+                break
+            if acstart in first_line:
+                countings = 1
+                break
+            else:
+                logger.debug('Try again')
+                continue
+        except ValueError:
+            continue
+
+    # actual plotting now
+    #############################################################################
+    total_num = 0
     while total_num < len(first_line):
-        if total_num == 0:     
+        if countings == 1:
+            total_num = first_line.index(acstart)
+            countings = 0
+        if total_num == 0:  
+            countings = 0  
             col1 = "vel"
             col2 = "Tant"
             col0 = "vel_vlsr"
@@ -284,7 +320,17 @@ if __name__ == "__main__":
         spectra_y = deepcopy(data[col2])      
         minvel = min(spectra_x)
         maxvel = max(spectra_x)
-        
+        found = []
+        if args.rfi:
+            for l in rfi:
+                start = find_nearest(data[col3],l[0])[0] - 2
+                end = find_nearest(data[col3],l[1])[0]  + 2
+                fit = np.polyfit(spectra_x[start:end],spectra_y[start:end],1)
+                fit_fn = np.poly1d(fit)
+                spectra_y[start:end] = fit_fn(spectra_x[start:end])
+                #print(start,end)
+                #print(spectra_x[start],spectra_x[end],spectra_y[start],spectra_y[end])
+        #print('RFI')
         # plot raw data
         #########################################################################
         if total_num == 0:
@@ -387,7 +433,7 @@ if __name__ == "__main__":
         spectra_blcorr=args.spec * (deepcopy(spectra_y)-divisor(spectra_x))
         maxt = max(spectra_blcorr)
         mint = min(spectra_blcorr)
-
+        #print('RMS')
         # defining RMS
         if total_num == 0:
             rms=np.std(spectra_blcorr[mask])
@@ -578,27 +624,23 @@ if __name__ == "__main__":
         if total_num != 0:
             med= (np.median(spectra_blcorr)/3.)
             intensity_answer = 5.0
+        intensity_mask_guess = []
         while True:
             try:
-                intensity_mask_guess = np.where((spectra_blcorr >= intensity_answer * rms) & (spectra_blcorr >= -intensity_answer * rms))
-                minint=min(spectra_x[intensity_mask_guess])
-                maxint=max(spectra_x[intensity_mask_guess])
-                while True:
-                    if len(intensity_mask_guess) == 0:
-                        intensity_answer -=1
-                        intensity_mask_guess = np.where((spectra_blcorr >= intensity_answer * rms) & (spectra_blcorr >= -intensity_answer * rms))
-                        minint=min(spectra_x[intensity_mask_guess])
-                        maxint=max(spectra_x[intensity_mask_guess])
-                    if intensity_answer == 0:
-                        intensity_mask_guess = np.linspace(len(spectra_x)/4-1,3*len(spectra_x)/4-1, num = len(spectra_x)/2)
-                    if len(intensity_mask_guess) > 0:
-                        break
+                if len(intensity_mask_guess) == 0:
+                    #print('Guessing intensity')
+                    intensity_mask_guess = np.where((spectra_blcorr >= np.abs(intensity_answer * rms)))
+                    minint=min(spectra_x[intensity_mask_guess])
+                    maxint=max(spectra_x[intensity_mask_guess])
+                if intensity_answer == 0:
+                    intensity_mask_guess = np.linspace(len(spectra_x)/4-1,3*len(spectra_x)/4-1, num = len(spectra_x)/2)
+                if len(intensity_mask_guess) > 0:
+                    break
             except ValueError:
+                intensity_answer -=1
                 continue
-            if len(intensity_mask_guess) > 0:
-                break
 
-
+        #print('Made it to intensity')
 
         if total_num == 0:
             # Intensity line estimate
