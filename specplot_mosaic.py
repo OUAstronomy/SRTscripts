@@ -10,6 +10,7 @@ Misc  : Will reduce the 1d spectra data from the specparse program
 # import standard modules
 from sys import version_info,exit
 from os import system as _SYSTEM_
+from os import getcwd
 from os.path import isfile
 from copy import deepcopy
 from glob import glob
@@ -204,11 +205,12 @@ if __name__ == "__main__":
     logfile       = args.log
     verbosity     = args.verb
     auto = False
+    retry = -99
 
     # Set up message logger       
     #############################################################################     
     if not logfile:
-        logfile = ('{}_{}.log'.format(__file__[:-3],time.time()))
+        logfile = ('{}/{}_{}.log'.format(getcwd(),__file__[:-3],time.time()))
     logger = utilities.Messenger(verbosity=verbosity, add_timestamp=True,logfile=logfile)
     logger.header1("Starting {}....".format(__file__[:-3]))
     logger.debug("Commandline Arguments: {}".format(args))
@@ -233,7 +235,6 @@ if __name__ == "__main__":
         files = ['None',]
     logger.failure("Will remove these files: {}\n".format(' | '.join(files)))
     logger.warn('Move these to a directory if you don\'t want these deleted')
-    logger.waiting(auto)
 
     _TEMP_ = str(time.time())
     datafile = 'TEMPORARY_FILE_SPECREDUC_{}_0.txt'.format(_TEMP_) # holds orig data
@@ -333,7 +334,7 @@ if __name__ == "__main__":
         #print('RFI')
         # plot raw data
         #########################################################################
-        if total_num == 0:
+        if (total_num == 0) or (retry != -99):
             x2label = ''
             x1label = r'V$_{lsr}$ (km/s)'
             ylabel = 'Antenna Temperature (K)'
@@ -373,7 +374,6 @@ if __name__ == "__main__":
             mask_tot = np.linspace(0,len(spectra_x)-1,num=len(spectra_x))
             mask = np.delete(mask_tot,mask_inv)
             mask = [int(x) for x in mask]
-            logger.waiting(auto)
 
             # show projected baselines
             reset.resetplot('Projected Baselines')
@@ -407,7 +407,6 @@ if __name__ == "__main__":
                 # fitting polynomial 4th order to baseline
                 fit = np.polyfit(spectra_x[mask],spectra_y[mask],polynumfit)
                 fit_fn = np.poly1d(fit)
-                logger.waiting(auto)
 
                 # plotting fitted baseline to original image
                 
@@ -417,7 +416,6 @@ if __name__ == "__main__":
                 reset.draw()
                 newask = logger.pyinput('(y or [RET]/n or [SPACE]) Was this acceptable? ')
                 if (newask.lower() == 'y') or (newask == ''):
-                    logger.waiting(auto)
                     with open(_TEMP2_,'a') as _T_:
                         _T_.write("The polynomial is: \n {}\n".format(fit_fn))
                     break
@@ -435,21 +433,19 @@ if __name__ == "__main__":
         mint = min(spectra_blcorr)
         #print('RMS')
         # defining RMS
-        if total_num == 0:
+        if (total_num == 0) or (retry != -99):
             rms=np.std(spectra_blcorr[mask])
             fullrms = rms
             logger.message('RMS Noise: {}K'.format(rms))
             with open(_TEMP2_,'a') as _T_:
                 _T_.write('RMS Noise: {}K\n'.format(rms))
-            logger.waiting(auto)
 
         # plotting the corrected baseline
-        if total_num == 0:
+        if (total_num == 0) or (retry != -99):
             reset.resetplot('Plotting the corrected baseline')
             reset.plot(spectra_x,spectra_blcorr,'data',color='black',linestyle='steps',label='data')
             reset.plot([minvel,maxvel],[0,0],'baseline',color='red',linestyle='steps',label='flat baseline')
             reset.draw()
-            logger.waiting(auto)
             outfilename_iter +=1
             _TEMPNAME = "{}_{}.pdf".format(outfilename,outfilename_iter)
             _TEMP3_.append(_TEMPNAME)
@@ -478,7 +474,7 @@ if __name__ == "__main__":
             rfi_regions = deepcopy(rfi_mask)
 
         # remove rfi
-        if total_num == 0:
+        if (total_num == 0) or (retry != -99):
             logger.message("Will try fitting with simple polynomial, gaussian, bimodal, or fail")
             rfi_fit_fn_ans=''
             while ((newask.lower() == 'n')or (newask == ' ')) and (len(rfi_mask) > 0):
@@ -559,7 +555,6 @@ if __name__ == "__main__":
                 reset.draw()
                 newask = logger.pyinput('(y or [RET]/n or [SPACE]) Is this acceptable? ')
                 if (newask.lower() == 'y') or (newask == ''):
-                    logger.waiting(auto)
                     with open(_TEMP2_,'a') as _T_:
                         _T_.write("The function is: \n{}\n".format(rfi_fit_fn))
                     break
@@ -573,14 +568,13 @@ if __name__ == "__main__":
         except:
             pass
 
-        if total_num == 0:
+        if (total_num == 0) or (retry != -99):
             corr = plotter("Corrected Baseline and RFI removed",logger)
             corr.open((1,1),x1label,ylabel)
             corr.plot(spectra_x,spectra_blcorr,'corrected',color='black',linestyle='steps',label='corrected')
             corr.plot([minvel,maxvel],[0,0],'flat',color='red',linestyle='steps',label='flat baseline')
             corr.limits(ylim=(-1,1.2*max(spectra_blcorr)))
             corr.draw()
-            logger.waiting(auto)
             outfilename_iter +=1
             _TEMPNAME = "{}_{}.pdf".format(outfilename,outfilename_iter)
             _TEMP3_.append(_TEMPNAME)
@@ -593,7 +587,6 @@ if __name__ == "__main__":
             final.limits(xlim=(minvel,maxvel),ylim=(mint-1,maxt * 1.1))
             final.plot(spectra_x,spectra_blcorr,'data',color='black',linestyle='steps',label='data')
             final.draw()
-            logger.waiting(auto)
             outfilename_iter +=1
             _TEMPNAME = "{}_{}.pdf".format(outfilename,outfilename_iter)
             _TEMP3_.append(_TEMPNAME)
@@ -621,7 +614,7 @@ if __name__ == "__main__":
                 if str(intensity_answer).lower() != 'none':
                     with open(_TEMP2_,'a') as _T_:
                         _T_.write('Sigma value for Gaussian: {}\n'.format(intensity_answer))
-        if total_num != 0:
+        if (total_num != 0) or (retry != -99):
             med= (np.median(spectra_blcorr)/3.)
             intensity_answer = 5.0
         intensity_mask_guess = []
@@ -641,8 +634,9 @@ if __name__ == "__main__":
                 continue
 
         #print('Made it to intensity')
+        autoask = 'y'
 
-        if total_num == 0:
+        if (total_num == 0) or (retry != -99):
             # Intensity line estimate
             lie = plotter('Intensity Line Estimate',logger)
             lie.open((1,1),x1label,ylabel)
@@ -652,13 +646,11 @@ if __name__ == "__main__":
             lie.plot([minint,minint],[0,maxt],'lower',color='blue',linestyle='dotted')
             lie.plot([maxint,maxint],[0,maxt],'upper',color='blue',linestyle='dotted')
             lie.draw()
-            logger.waiting(auto)
             outfilename_iter +=1
             _TEMPNAME = "{}_{}.pdf".format(outfilename,outfilename_iter)
             _TEMP3_.append(_TEMPNAME)
             lie.save(_TEMPNAME)
 
-            answer = ""
             while True:
                 try:
                     answer_ok = logger.pyinput("(y or [RET]/n or [SPACE]) Is region guess for the line intensity is okay")
@@ -677,7 +669,6 @@ if __name__ == "__main__":
                         intensity_mask_array = lasso.selection('data')
                         intensity_mask = []
 
-                        logger.waiting(auto)
                         for i in range(len(intensity_mask_array)):
                             intensity_mask = np.append(intensity_mask,np.where(spectra_x == intensity_mask_array[i]))
                         intensity_mask = [int(x) for x in intensity_mask]
@@ -708,10 +699,18 @@ if __name__ == "__main__":
             _TEMPNAME = "Final.{}_{}.pdf".format(outfilename,outfilename_iter)
             intensitymask.save(_TEMPNAME)
             intensitymask.draw()
+            logger.waiting(auto)
             plt.show()
+            if retry != -99:
+                logger.pyinput("[RET]")
+                plt.close('all')
+                plt.clf()
+                plt.close()
+            retry = -99
 
             # showing Intensity Mask
         else:
+            retry = -99
             intensity_mask = intensity_mask_guess
             x = [int(x) for x in range(len(spectra_x)) if (x < 30) or (x > 180)]
             rfi_fit = np.polyfit(spectra_x[x],spectra_blcorr[x],2)
@@ -725,14 +724,19 @@ if __name__ == "__main__":
                         holder.append(i)
 
             intensity_mask_guess = np.ndarray(len(holder),dtype=int)
-            for i,j in enumerate(holder):
-                intensity_mask_guess[i] = int(j)
-            minint=min(spectra_x[intensity_mask_guess])
-            maxint=max(spectra_x[intensity_mask_guess])
-            intensity_mask = intensity_mask_guess
+            try:
+                for i,j in enumerate(holder):
+                    intensity_mask_guess[i] = int(j)
+                minint=np.min(spectra_x[intensity_mask_guess])
+                maxint=np.max(spectra_x[intensity_mask_guess])
+                intensity_mask = intensity_mask_guess
+            except:
+                minint = np.min(spectra_x)
+                maxint = np.max(spectra_x)
+                intensity_mask = holder
+            maxt = np.max(spectra_blcorr)
 
-
-            if args.plot:
+            if (args.plot):
                 plt.figure('Intensity Mask')
                 plt.plot(spectra_x,spectra_blcorr,color='black',linestyle='steps',label='Data')
                 plt.plot([minint,minint],[0,maxt],color='blue',linestyle='dotted')
@@ -741,28 +745,34 @@ if __name__ == "__main__":
                 outfilename_iter +=1
                 _TEMPNAME = "Final.{}_{}.pdf".format(outfilename,outfilename_iter)
                 plt.savefig(_TEMPNAME)
+                plt.show()
+                autoask = logger.pyinput('(y or [RET]/n or [SPACE]) Is this acceptable? ')
+                if (autoask.lower() != 'y') and (autoask != ''):
+                    retry = total_num
+                    total_num = total_num -1
+                    logger.failure("retrying....")
                 plt.clf()
             
+        if retry == -99:
+            # intensity
+            intensity=trapz(spectra_blcorr[intensity_mask],intensity_mask)
+            chanwidth=abs(max(spectra_x)-min(spectra_x))/len(spectra_x)
+            intensity_rms=rms*chanwidth*(float(len(intensity_mask)))**0.5
+            logger.message("Intensity: ")
+            logger.message("{} +- {} (K km/s)".format(intensity,intensity_rms))
+            with open(_TEMP2_,'a') as _T_:
+                _T_.write('Intensity: {} +- {} (K km/s)'.format(intensity,intensity_rms))
 
-        # intensity
-        intensity=trapz(spectra_blcorr[intensity_mask],intensity_mask)
-        chanwidth=abs(max(spectra_x)-min(spectra_x))/len(spectra_x)
-        intensity_rms=rms*chanwidth*(float(len(intensity_mask)))**0.5
-        logger.message("Intensity: ")
-        logger.message("{} +- {} (K km/s)".format(intensity,intensity_rms))
-        with open(_TEMP2_,'a') as _T_:
-            _T_.write('Intensity: {} +- {} (K km/s)'.format(intensity,intensity_rms))
+            # write to file
+            try:
+                spec_final = Table([data[col3],data[col0],spectra_x,spectra_y,spectra_blcorr], names=('freq','vel_sub', 'vel', 'Tant_raw', 'Tant_corr'))
+            except KeyError:
+                spec_final = Table([data[col3],spectra_x,spectra_y,spectra_blcorr], names=('freq', 'vel', 'Tant_raw', 'Tant_corr'))           
+            ascii.write(spec_final,_TEMP1_,overwrite=True)
+            _SYSTEM_('cp -f ' + _TEMP1_ + ' ' + outfilename + "_spectra_corr.txt")
+            _SYSTEM_('cp -f ' + _TEMP2_ + ' ' + outfilename + "_parameters.txt")
 
-        # write to file
-        try:
-            spec_final = Table([data[col3],data[col0],spectra_x,spectra_y,spectra_blcorr], names=('freq','vel_sub', 'vel', 'Tant_raw', 'Tant_corr'))
-        except KeyError:
-            spec_final = Table([data[col3],spectra_x,spectra_y,spectra_blcorr], names=('freq', 'vel', 'Tant_raw', 'Tant_corr'))           
-        ascii.write(spec_final,_TEMP1_,overwrite=True)
-        _SYSTEM_('cp -f ' + _TEMP1_ + ' ' + outfilename + "_spectra_corr.txt")
-        _SYSTEM_('cp -f ' + _TEMP2_ + ' ' + outfilename + "_parameters.txt")
-
-        if total_num == 0:
+        if (total_num == 0):
             # close and reset
             ans = ''
             ans = logger.pyinput("[RET] to continue to complete this source or [SPACE] to cancel out...")
