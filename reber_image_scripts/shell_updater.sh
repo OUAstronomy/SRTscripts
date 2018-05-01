@@ -1,5 +1,5 @@
 #!/bin/bash
-_github_=""
+_github_="/home/jjtobin/github/SRTscripts/reber_image_scripts/"
 _db="${_github_}/live_img.sh"
 _dg="${_github_}/srt_win.sh"
 _dp="${_github_}/python_updator.sh"
