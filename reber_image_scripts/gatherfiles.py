@@ -13,3 +13,4 @@ for root, dirs, files in os.walk(mydirstart):
     for file in files:
         if isfile(file):
              os.system('cat {} >> {}'.format(os.path.join(root, file),temp))
+os.system('mv {} {}'.format(temp,myfiledest))
