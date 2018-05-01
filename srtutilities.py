@@ -10,24 +10,6 @@ Misc  : File will handle misc srt specific function
 from os import system as _SYSTEM_
 from sys import exit
 
-# preps the data file, returns the data from the file
-def prep(orig,inputfile):
-    _SYSTEM_('cp -f {} {}'.format(orig,inputfile))
-    _SYSTEM_("sed -i '/entered/d' {}".format(inputfile))
-    _SYSTEM_("sed -i '/cmd out of limits/d' {}".format(inputfile))
-    _SYSTEM_("sed -i '/Scan/d' {}".format(inputfile))
-
-    with open(inputfile,'r') as f:
-        f.seek(0)
-        _TMPLINE_=f.readline().strip('\n').split(' ')
-    if 'azoff' not in _TMPLINE_:  # check if format is correct of file
-        _SYSTEM_("sed -i -e 's/source/azoff 0.00 eloff 0.00 source/g' " + inputfile)
-
-    with open(inputfile,'r') as f:
-        f.seek(0)
-        allines = [[x for x in line.strip('\n').split(' ') if x != ''] for line in f.readlines()]
-    return allines
-
 class locations(object):
 
     def __init__(self):

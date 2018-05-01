@@ -7,7 +7,7 @@ _dy="/home/jjtobin/RealTime-Sun/"
 CWD=`pwd`
 while [ true ]; do
   cd "${_dy}"
-  /usr/bin/env python rt-sun.py
+  python rt-sun.py -sp
   cd "$CWD"
   /usr/bin/bash ${_db} &
   /usr/bin/bash ${_dg} &

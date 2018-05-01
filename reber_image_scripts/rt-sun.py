@@ -7,7 +7,7 @@ from matplotlib.ticker import ScalarFormatter
 from astropy.time import Time
 import matplotlib.dates as mdates
 from scipy.signal import medfilt as medfilt
-from time import gmtime, strftime, localtime
+from time import gmtime, strftime, localtime,time
 import argparse
 TIME=time()
 
@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser('Tries to pretty plot the current day and all s
 parser.add_argument('-sp',dest='sp',action='store_true',help='Only plot short plots of single day')
 parser.add_argument('-lp',dest='lp',action='store_true',help='plot the long plots of all days')
 args = parser.parse_args()
-cwd = os.get_cwd()
+cwd = os.getcwd()
 os.chdir('/home/jjtobin/RealTime-Sun/')
 
 if args.sp:
@@ -100,25 +100,44 @@ if args.sp:
     plt.tight_layout()
     plt.savefig('sun-current.png')
 
+def list_files(dir):
+    r = []
+    subdirs = [x[0] for x in os.walk(dir)]
+    for subdir in subdirs:
+        files = os.walk(subdir).next()[2]
+        if (len(files) > 0):
+            for file in files:
+                r.append(subdir + "/" + file)
+    return r  
 
 if args.lp:
     ##############################################################################
     # getting data
     ##############################################################################
+    # to repopulate full plot
+    '''
     mydirstart='/home/jjtobin/srtn/data/sun/'
     myfiledest='/home/jjtobin/RealTime-Sun/sun-current.all.dat'
+    allfiles= list_files(mydirstart)
+    os.system('python metaparse.py -i "{}" -o sun-current-reduced.all.metaparse.dat ' \
+               '--auto -l metaparse.log -v 0'.format(allfiles))
+    os.system('rm -f /tmp/sun-current-reduced.all.metaparse.dat')
+    os.system('sed "1,2d" sun-current-reduced.all.metaparse.dat | awk \'{ print $1, $7 }\' '\
+              '>> /tmp/sun-current-reduced.all.dat ')
+    os.system('mv -f /tmp/sun-current-reduced.all.dat ./')
+    '''
+    # to just update the plot
+    os.system('python metaparse.py -i sun-current.dat -o sun-current-reduced.all.metaparse.dat ' \
+               '--auto -l metaparse.log -v 0')
+    os.system('rm -f /tmp/sun-current-reduced.all.metaparse.dat')
+    os.system('sed "1,2d" sun-current-reduced.all.metaparse.dat | awk \'{ print $1, $7 }\' '\
+              '>> /tmp/sun-current-reduced.all.dat ')
+    os.system('cat /tmp/sun-current-reduced.all.dat >> ./sun-current-reduced.all.dat')
 
-    allfiles= []
-    for root, dirs, files in os.walk(mydirstart):
-        for file in files:
-            if isfile(file):
-                 allfiles.append(os.path.join(root, file))
-    os.system('python metaparse.py -i {} -o sun-current-reduced.all.dat ' \
-               '--auto -l metaparse.log -v0'.format(allfiles))
-    data = np.loadtxt("sun-current-reduced.all.dat",skiprows=2,dtype=str)
+    data = np.loadtxt("sun-current-reduced.all.dat",dtype=str)
 
     t = Time(data[:,0], format='yday', scale='utc')
-    tantdata = [float(x) for x in data[:,6]]
+    tantdata = [float(x) for x in data[:,1]]
 
     ##############################################################################
     # long time plot

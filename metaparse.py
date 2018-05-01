@@ -7,8 +7,7 @@ Misc  :
   Command line tool to format SRT metadata files to a human-readable format.
   The current output format is given by the example below:
 <<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    Made from file: data.txt
-    R7 S8 G10
+    Version:0.2...Made from files: data.txt
     DATE obsn az el freq_MHz Tsys Tant vlsr glat glon azoff eloff source Fstart fstop spacing bw fbw nfreq nsam npoint integ sigma bsw
     2015:218:16:30:49 0 165 63 1421.5000 162.000 1125.714 8.19 36.980 211.928 0.00 0.00 Sun 1420.497 1422.503 0.009375 2.400 2.000 256 1048576 214 5 0.781 0
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -25,48 +24,73 @@ from version import *
 from constants import constants
 from colours import colours
 import utilities
-from srtutilities import *
 
 # checking python version
 assert assertion()
 __version__ = package_version()
 
+# preps the data file, returns the data from the file
+def prep(orig,inputfile,returndata=False):
+    _SYSTEM_('cp -f {} {}'.format(orig,inputfile))
+    _SYSTEM_("sed -i '/entered/d' {}".format(inputfile))
+    _SYSTEM_("sed -i '/cmd out of limits/d' {}".format(inputfile))
+    _SYSTEM_("sed -i '/Scan/d' {}".format(inputfile))
+    _SYSTEM_("sed -i 's/ MHz / /g' {}".format(inputfile))
+    _SYSTEM_("sed -i '/*/d' {}".format(inputfile))
+
+    if returndata:
+        with open(inputfile,'r') as f:
+            f.seek(0)
+            allines = [[x for x in line.strip('\n').split(' ') if x != ''] for line in f.readlines()]
+        return allines
 
 def info_parse(input_file, output_file):
-    _SYSTEM_("sed -i 's/ MHz / /g' " + input_file)
-    _SYSTEM_("sed -i 's/ integration periods//g' " + input_file)
     with open(input_file, 'r') as f:
-        input_data = [[x for x in line.strip('\n').split(' ') if x != ''] for line in f.readlines()]
-
-    #print(input_data[0])
+        input_data = [line.strip('\n') for line in f.readlines()]
 
     # full header
-    header=[]
-    for _T_ in range(3):
-        for _R_ in range(len(input_data[_T_])):
-            if ((_R_%2)==0) and (input_data[_T_][_R_] != 'Spectrum'):
-                header.append(input_data[_T_][_R_])
-
-    #print(header)
-
-    headernum=[]
-    for _K_ in range(len(input_data)):
-        if ((_K_%4) == 0):
-            temp = []
-        if ((_K_%4) < 3):
-            for _R_ in range(len(input_data[_K_])):
-                if ((_R_%2)==1):
-                    temp.append(input_data[_K_][_R_])
-        if ((_K_%4) == 3):
-            headernum.append([item for item in temp])
-
-    #raise RuntimeError('Custom')
+    def get_fullheader(section):
+        '''
+        Assuming section (list,4) list that is the 4 row section of each integration readout
+        will output just the headers of the first 3 columns. eg
+        DATE***
+        FSTART***
+        Spectrum***
+         582***
+        '''
+        header=[]
+        headcols=[]
+        headvals=[]
+        for _T_ in range(4):
+            if _T_%4 != 3:
+                section[_T_] = ' '.join([x.strip(' ') for x in section[_T_].split(' ')\
+                                if ((x != ' ') and (x != ''))])
+                for i,x in enumerate(section[_T_].split(' ')):
+                    if ((x != ' ') and (x != '') and (i%2==0)):
+                        headcols.append(x)
+                    elif ((x != ' ') and (x != '') and (i%2==1)):
+                        headvals.append(x)
+        return ' '.join(headcols),' '.join(headvals)
+        
+    headervals=[]
+    i,j = 0,''
+    while i < (len(input_data) - 3):
+        start,stop = i,i+4
+        j = input_data[start:stop]
+        if 'azoff' not in j[0]:
+            j[0] = j[0].replace("source","azoff 0.00 eloff 0.00 source")
+        if i==0:
+            headercols,x=get_fullheader(j)
+            headervals.append(x)
+        else:
+            ignore,x=get_fullheader(j)
+            headervals.append(x)
+        i = stop
 
     with open(output_file,'w') as f:
-        f.write(' '.join(header)+'\n')
-        for _I_ in headernum:
-            f.write("{}\n".format(' '.join(_I_)))
-
+        f.write(headercols+'\n')
+        for _I_ in headervals:
+            f.write("{}\n".format(_I_))
 
 # main function
 if __name__ == "__main__":
@@ -123,11 +147,11 @@ if __name__ == "__main__":
     logger.waiting(auto,seconds=0)
 
     if len(instring.split(',')) < 2:
-        origfiles = [f for f in glob(instring+'*') if _ISFILE_(f)]
+        origfiles = [f.strip('[').strip(']').strip(' ') for f in glob(instring+'*') if _ISFILE_(f)]
         if origfiles == []:
             origfiles.append(instring)
     else:
-        origfiles = instring.strip('[').strip(']').split(',')
+        origfiles = [x.strip('[').strip(']').strip(' ') for x in instring.split(',')]
 
     logger.success('Files to be analyzed: {}'.format(','.join(origfiles)))
     logger.waiting(auto,seconds=0)
@@ -136,18 +160,23 @@ if __name__ == "__main__":
 
     for _NUM_,_FILE_ in enumerate(origfiles):
         # starting
+        print(_FILE_)
         logger.header2('#################################')
         logger.header2("Running file: {}".format(_FILE_))
-        k = prep(_FILE_,_TEMP0_)
+        prep(_FILE_,_TEMP0_)
 
         # running parse
         info_parse(_TEMP0_,_TEMP1_)
         logger.success("Finished file: {}".format(_FILE_))
         logger.header2('#################################')
-        os.system('cat {} >> {}'.format(_TEMP1_,_TEMP2_))
+        if _NUM_ == 0:
+            _SYSTEM_('cat {} >> {}'.format(_TEMP1_,_TEMP2_))
+        else:
+            _SYSTEM_('sed -i "1d" {}'.format(_TEMP1_))
+            _SYSTEM_('cat {} >> {}'.format(_TEMP1_,_TEMP2_))
 
     with open(_TEMP2_, 'r') as original: data = original.read()
-    with open(_TEMP2_, 'w') as modified: modified.write('Version: {}...Made from file: {}\n{}'.format(__version__,_FILE_ ,data))
+    with open(_TEMP2_, 'w') as modified: modified.write('Version: {}...Made from files: {}\n{}'.format(__version__,origfiles ,data))
     _SYSTEM_("mv -f " + _TEMP2_ + " " + tmpname)
 
     logger.success("Finished with all files: {}".format(' | '.join(origfiles)))
