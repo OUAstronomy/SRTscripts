@@ -115,6 +115,7 @@ if __name__ == "__main__":
     _TEMP_ = str(time.time())
     _TEMP0_ = 'TEMPORARY_RM_ERROR_'+_TEMP_+'.txt'
     _TEMP1_ = 'TEMPORARY_METADATA_'+_TEMP_+'.txt'
+    _TEMP2_ = 'TEMPORARY_METADATA2_'+_TEMP_+'.txt'
     logger._REMOVE_(_TEMP_)
 
     # Read in the files
@@ -122,9 +123,12 @@ if __name__ == "__main__":
         logger.warn("Will overwrite:  {}".format(tmpname))
     logger.waiting(auto,seconds=0)
 
-    origfiles = [f for f in glob(instring+'*') if _ISFILE_(f)]
-    if origfiles == []:
-        origfiles.append(instring)
+    if len(instring.split(',')) < 2:
+        origfiles = [f for f in glob(instring+'*') if _ISFILE_(f)]
+        if origfiles == []:
+            origfiles.append(instring)
+    else:
+        origfiles = instring.strip('[').strip(']').split(',')
 
     logger.success('Files to be analyzed: {}'.format(','.join(origfiles)))
     logger.waiting(auto,seconds=0)
@@ -141,10 +145,11 @@ if __name__ == "__main__":
         info_parse(_TEMP0_,_TEMP1_)
         logger.success("Finished file: {}".format(_FILE_))
         logger.header2('#################################')
+        os.system('cat {} >> {}'.format(_TEMP1_,_TEMP2_))
 
-        with open(_TEMP1_, 'r') as original: data = original.read()
-        with open(_TEMP1_, 'w') as modified: modified.write('Version: {}...Made from file: {}\n{}'.format(__version__,_FILE_ ,data))
-        _SYSTEM_("mv -f " + _TEMP1_ + " " + tmpname)
+    with open(_TEMP2_, 'r') as original: data = original.read()
+    with open(_TEMP2_, 'w') as modified: modified.write('Version: {}...Made from file: {}\n{}'.format(__version__,_FILE_ ,data))
+    _SYSTEM_("mv -f " + _TEMP2_ + " " + tmpname)
 
     logger.success("Finished with all files: {}".format(' | '.join(origfiles)))
     logger.header2("Made file: {} and logfile: {}".format(tmpname,logfile)) 
