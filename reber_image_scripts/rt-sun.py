@@ -6,17 +6,48 @@ import os
 from matplotlib.ticker import ScalarFormatter
 from astropy.time import Time
 import matplotlib.dates as mdates
+years = mdates.YearLocator()   # every year
+months = mdates.MonthLocator()  # every month
+yearsFmt = mdates.DateFormatter('%Y-%B')
+hoursFmt = mdates.DateFormatter('%H:%M')
 from scipy.signal import medfilt as medfilt
-from time import gmtime, strftime, localtime,time
+from time import strftime, localtime,time
 import argparse
 TIME=time()
 
 parser = argparse.ArgumentParser('Tries to pretty plot the current day and all sun data')
 parser.add_argument('-sp',dest='sp',action='store_true',help='Only plot short plots of single day')
 parser.add_argument('-lp',dest='lp',action='store_true',help='plot the long plots of all days')
+parser.add_argument('-llp',dest='llp',action='store_true',help='plot the long plots of all days (regen from source)')
+parser.add_argument('-rp',dest='rp',action='store_true',help='refresh the long plot')
 args = parser.parse_args()
 cwd = os.getcwd()
 os.chdir('/home/jjtobin/RealTime-Sun/')
+if (not args.sp) and (not args.lp):
+    print('Requires -sp (single day plotting) or -lp (for all plotting)')
+    exit(0)
+
+# for general formatting of figure axis
+def fig_formatter(ax,formatter='hours',locations=None):
+    ticks_font = font_manager.FontProperties(size=16, weight='normal', stretch='normal')
+    for axis in ['top','bottom','left','right']:
+       ax.spines[axis].set_linewidth(2)
+    if formatter=='months':
+        myFmtmajor   = yearsFmt
+        myLocmajor   = mdates.MonthLocator()
+    elif formatter=='hours':
+        myFmtmajor   = hoursFmt
+        myLocmajor   = mdates.HourLocator()
+    ax.xaxis.set_major_formatter(myFmtmajor)
+    if not locations:
+        ax.xaxis.set_major_locator(myLocmajor)
+    else:
+        ax.xaxis.set_major_locator()
+    plt.gcf().autofmt_xdate()  # orient date labels at a slant
+    ax.tick_params('both', which='major', length=15, width=1, pad=15)
+    ax.tick_params('both', which='minor', length=7.5, width=1, pad=15)
+    plt.tight_layout()
+    plt.draw()
 
 if args.sp:
     ##############################################################################
@@ -32,20 +63,9 @@ if args.sp:
     ##############################################################################
     # short time plot
     ##############################################################################
-    #tmax=Time(strftime('%Y:%j:18:06:09.3', localtime()),format='yday',scale='utc')
-    tstart=Time(strftime('%Y:%j:16:37:24.1', localtime()),format='yday',scale='utc')
-    #tend=Time(strftime('%Y:%j:19:35:21.5', localtime()),format='yday',scale='utc')
-    tstart=Time(strftime('%Y:%j:13:00:00', localtime()),format='yday',scale='utc')
-
-    tbegin=Time('2017:222:00:00:00',format='yday',scale='utc')
-    tstop=Time('2017:223:00:00:00',format='yday',scale='utc')
-
-    decimalyearstart=tbegin.decimalyear
-    decimalyearstop=tstop.decimalyear
-
-    decimalyear=np.linspace(decimalyearstart,decimalyearstop,24)
-    timepsace=Time(decimalyear,format='decimalyear',scale='utc')
-
+    tstart=Time(strftime('%Y:%j:23:00:00', localtime()),format='yday',scale='utc')
+    tstart=Time(strftime('%Y:%j:12:00:00', localtime()),format='yday',scale='utc')
+    plt.clf()
 
     fig=plt.figure(figsize=(10,7))
     ax = fig.add_subplot(111)
@@ -62,22 +82,8 @@ if args.sp:
     lin2=ax.plot(time_axis,resampled_data,color='red',marker='o',linestyle='none')
     #lin3=ax.plot(t.mjd,Tant_smooth,color='blue',marker='o',linestyle='none')
     #print("{},{},{}".format(data['DATE'],data['Tant'],resampled_data))
-    ax.tick_params('both', which='major', length=15, width=1, pad=15)
-    ax.tick_params('both', which='minor', length=7.5, width=1, pad=15)
-
-    ticks_font = font_manager.FontProperties(size=16, weight='normal', stretch='normal')
-    #for label in (ax.get_xticklabels() + ax.get_yticklabels()):
-    #            label.set_fontproperties(ticks_font)
-    #for axis in [ax.xaxis, ax.yaxis]:
-    #    axis.set_major_formatter(ScalarFormatter())
-    #    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y,pos: ('{{:.{:1d}f}}'.format(int(np.maximum(-np.log10(y),0)))).format(y)))
-    for axis in ['top','bottom','left','right']:
-       ax.spines[axis].set_linewidth(2)
-
     ax.set_xlabel('Universal Time', fontsize=18)
     ax.set_ylabel('Radio Brightness (K)', fontsize=18)
-
-    print('Median Tant: ',np.median(tantdata))
 
     T_ant_sun=np.median(tantdata)
 
@@ -91,13 +97,7 @@ if args.sp:
     showtime = strftime("%Y-%m-%d %H:%M:%S", localtime())
     plt.title('Realtime Solar Flux Data - '+showtime)
     #plt.title('Realtime Eclipse Data - '+showtime)
-    plt.plot_date(timepsace.plot_date, decimalyear)
-    plt.gcf().autofmt_xdate()  # orient date labels at a slant
-    plt.draw()
-
-    myFmt = mdates.DateFormatter('%H:%M')
-    ax.xaxis.set_major_formatter(myFmt)
-    plt.tight_layout()
+    fig_formatter(ax)
     plt.savefig('sun-current.png')
 
 def list_files(dir):
@@ -114,81 +114,61 @@ if args.lp:
     ##############################################################################
     # getting data
     ##############################################################################
-    # to repopulate full plot
-    '''
-    mydirstart='/home/jjtobin/srtn/data/sun/'
-    myfiledest='/home/jjtobin/RealTime-Sun/sun-current.all.dat'
-    allfiles= list_files(mydirstart)
-    os.system('python metaparse.py -i "{}" -o sun-current-reduced.all.metaparse.dat ' \
-               '--auto -l metaparse.log -v 0'.format(allfiles))
-    os.system('rm -f /tmp/sun-current-reduced.all.metaparse.dat')
-    os.system('sed "1,2d" sun-current-reduced.all.metaparse.dat | awk \'{ print $1, $7 }\' '\
-              '>> /tmp/sun-current-reduced.all.dat ')
-    os.system('mv -f /tmp/sun-current-reduced.all.dat ./')
-    '''
+    # to repopulate full plot, backup should already be stored if needed <sun-current-reduced.all.dat.bak>
+    if args.llp:
+        mydirstart='/home/jjtobin/srtn/data/sun/'
+        myfiledest='/home/jjtobin/RealTime-Sun/sun-current.all.dat'
+        allfiles= list_files(mydirstart)
+        os.system('python metaparse.py -i "{}" -o sun-current-reduced.all.metaparse.dat ' \
+                   '--auto -l metaparse.log -v 0'.format(allfiles))
+        os.system('rm -f /tmp/sun-current-reduced.all.metaparse.dat')
+        os.system('sed "1,2d" sun-current-reduced.all.metaparse.dat | awk \'{ print $1, $7 }\' '\
+                  '>> /tmp/sun-current-reduced.all.dat ')
+        os.system('mv -f /tmp/sun-current-reduced.all.dat ./')
+        os.system('rm -f ./sun-current-reduced.all.metaparse.dat')
     # to just update the plot
-    os.system('python metaparse.py -i sun-current.dat -o sun-current-reduced.all.metaparse.dat ' \
-               '--auto -l metaparse.log -v 0')
-    os.system('rm -f /tmp/sun-current-reduced.all.metaparse.dat')
-    os.system('sed "1,2d" sun-current-reduced.all.metaparse.dat | awk \'{ print $1, $7 }\' '\
-              '>> /tmp/sun-current-reduced.all.dat ')
-    os.system('cat /tmp/sun-current-reduced.all.dat >> ./sun-current-reduced.all.dat')
+    elif not args.rp:
+        os.system('python metaparse.py -i sun-current.dat -o sun-current-reduced.all.metaparse.dat ' \
+                   '--auto -l metaparse.log -v 0')
+        os.system('rm -f /tmp/sun-current-reduced.all.metaparse.dat')
+        os.system('sed "1,2d" sun-current-reduced.all.metaparse.dat | awk \'{ print $1, $7 }\' '\
+                  '>> /tmp/sun-current-reduced.all.dat ')
+        os.system('cat /tmp/sun-current-reduced.all.dat >> ./sun-current-reduced.all.dat')
+        os.system('rm -f ./sun-current-reduced.all.metaparse.dat')
 
     data = np.loadtxt("sun-current-reduced.all.dat",dtype=str)
-
     t = Time(data[:,0], format='yday', scale='utc')
     tantdata = [float(x) for x in data[:,1]]
 
     ##############################################################################
     # long time plot
     ##############################################################################
-    tstart=Time(strftime('2017:01:00:00:00'),format='yday',scale='utc')
+    tstart =Time(strftime('2017:65:00:00:00'),format='yday',scale='utc')
     tfinish=Time(strftime('%Y:%j:23:59:59', localtime()),format='yday',scale='utc')
-    tbegin=Time('2017:222:00:00:00',format='yday',scale='utc')
-    tstop=Time('2017:223:00:00:00',format='yday',scale='utc')
-
-    decimalyearstart=tbegin.decimalyear
-    decimalyearstop=tstop.decimalyear
-
-    decimalyear=np.linspace(decimalyearstart,decimalyearstop,24)
-    timepsace=Time(decimalyear,format='decimalyear',scale='utc')
-
-
-    fig=plt.figure(figsize=(25,7))
+    plt.clf()
+    fig=plt.figure(figsize=(45,7))
     ax = fig.add_subplot(111)
-    ax.set_xlim(tstart.mjd,tfinish.mjd)
+    ax.set_xlim(tstart.plot_date,tfinish.plot_date)
     ax.set_ylim(0,1.01*max(tantdata))
 
-    Tant_smooth = medfilt(tantdata, 15)
+    sampling=31
+    Tant_smooth = medfilt(tantdata, sampling)
+    time_axis=t.plot_date[0::sampling]
+    resampled_data=np.interp(time_axis,t.plot_date,tantdata)
 
-    time_axis=t.mjd[0::15]
-    resampled_data=np.interp(time_axis,t.mjd,tantdata)
-
-    lin1=ax.plot(t.mjd,tantdata,color='black',marker='o',linestyle='none')
+    lin1=ax.plot(t.plot_date,tantdata,color='black',marker='o',linestyle='none')
     lin2=ax.plot(time_axis,resampled_data,color='red',marker='o',linestyle='none')
-    ax.tick_params('both', which='major', length=15, width=1, pad=15)
-    ax.tick_params('both', which='minor', length=7.5, width=1, pad=15)
-
-    ticks_font = font_manager.FontProperties(size=16, weight='normal', stretch='normal')
-    for axis in ['top','bottom','left','right']:
-       ax.spines[axis].set_linewidth(2)
 
     ax.set_xlabel('Universal Time', fontsize=18)
     ax.set_ylabel('Radio Brightness (K)', fontsize=18)
 
-    print('Median Tant: ',np.median(tantdata))
-
     T_ant_sun=np.median(tantdata)
     showtime = strftime("%Y-%m-%d %H:%M:%S", localtime())
     plt.title('Realtime Solar Flux Data - '+showtime)
-    plt.plot_date(timepsace.plot_date, decimalyear)
-    plt.gcf().autofmt_xdate()  # orient date labels at a slant
-    plt.draw()
+    fig_formatter(ax,'months')
+    plt.savefig('sun-current.all.png',dpi=100)
+    plt.savefig('sun-current.all.lowres.png',dpi=50)
 
-    myFmt = mdates.DateFormatter('%H:%M')
-    ax.xaxis.set_major_formatter(myFmt)
-    plt.tight_layout()
-    plt.savefig('sun-current.all.png')
-
+print('[{}] Median Tant: {} across {} integrations'.format(showtime,round(np.median(tantdata),4),len(tantdata)))
 
 os.chdir(cwd)

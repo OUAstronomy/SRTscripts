@@ -92,37 +92,12 @@ def info_parse(input_file, output_file):
         for _I_ in headervals:
             f.write("{}\n".format(_I_))
 
-# main function
-if __name__ == "__main__":
-    # -----------------------
-    # Argument Parser Setup
-    # -----------------------
-    description = 'Metadata parser to format srtn metadata into a human-readable form.\n' \
-                  '{} Version: {} {}'.format(colours.WARNING,__version__,colours._RST_)
-
-    in_help = 'unique string for name of the file/s to parse, no extension'
-    f_help    = 'The output file identifying string'
-    a_help    = 'If toggled will run the script non interactively'
-    log_help  = 'name of logfile with extension'
-    v_help    = 'Integer 1-5 of verbosity level'
-
-    # Initialize instance of an argument parser
-    parser = ArgumentParser(description=description)
-    parser.add_argument('-i', '--input', type=str, help=in_help, dest='infile',required=True)
-    parser.add_argument('-o','--output',type=str, help=f_help,dest='fout',\
-        default='master_metaparse_{}_v{}.txt'.format(time.time(),__version__))
-    parser.add_argument('--auto',action="store_true", help=a_help,dest='auto')
-    parser.add_argument('-l', '--logger',type=str, help=log_help,dest='log')
-    parser.add_argument('-v','--verbosity', help=v_help,default=2,dest='verb',type=int)
-
-    # Get the arguments
-    args = parser.parse_args()
+def _main_(args):
     instring = args.infile
     tmpname = args.fout
     auto = args.auto
     logfile = args.log
     verbosity = args.verb
-
     # Set up message logger            
     if not logfile:
         logfile = ('{}_{}.log'.format(__file__[:-3],time.time()))
@@ -182,6 +157,33 @@ if __name__ == "__main__":
     logger.success("Finished with all files: {}".format(' | '.join(origfiles)))
     logger.header2("Made file: {} and logfile: {}".format(tmpname,logfile)) 
     logger._REMOVE_(_TEMP_)
+
+# main function
+if __name__ == "__main__":
+    # -----------------------
+    # Argument Parser Setup
+    # -----------------------
+    description = 'Metadata parser to format srtn metadata into a human-readable form.\n' \
+                  '{} Version: {} {}'.format(colours.WARNING,__version__,colours._RST_)
+
+    in_help = 'unique string for name of the file/s to parse, no extension'
+    f_help    = 'The output file identifying string'
+    a_help    = 'If toggled will run the script non interactively'
+    log_help  = 'name of logfile with extension'
+    v_help    = 'Integer 1-5 of verbosity level'
+
+    # Initialize instance of an argument parser
+    parser = ArgumentParser(description=description)
+    parser.add_argument('-i', '--input', type=str, help=in_help, dest='infile',required=True)
+    parser.add_argument('-o','--output',type=str, help=f_help,dest='fout',\
+        default='master_metaparse_{}_v{}.txt'.format(time.time(),__version__))
+    parser.add_argument('--auto',action="store_true", help=a_help,dest='auto')
+    parser.add_argument('-l', '--logger',type=str, help=log_help,dest='log')
+    parser.add_argument('-v','--verbosity', help=v_help,default=2,dest='verb',type=int)
+
+    # Get the arguments
+    args = parser.parse_args()
+    _main_(args)
 
 #############
 # end of code

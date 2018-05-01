@@ -18,5 +18,6 @@ else
 fi
 
 cp -f "${python_dir_orig}/sun-current.png" "${python_dir_fin}/sun_current_${countc}.png"
-cp -f "${python_dir_orig}/sun-current.all.png" "/home/jjtobin/public_html/sun_current.all.png"
+cp -f "${python_dir_orig}/sun-current.all.png" "/home/jjtobin/public_html/img/sun-current.all.png"
+cp -f "${python_dir_orig}/sun-current.all.lowres.png" "/home/jjtobin/public_html/img/sun-current.all.lowres.png"
 echo $(($count+1)) > ${count_dir}
