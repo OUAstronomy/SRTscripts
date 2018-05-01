@@ -5,6 +5,7 @@ Author:   Nickalas Reynolds
 Desc:     This file is for reading out the parameters file and placing them into an
                easily readable column format.
 '''
+#!/usr/bin/env python
 
 import argparse
 from glob import glob

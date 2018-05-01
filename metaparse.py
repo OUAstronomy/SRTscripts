@@ -13,7 +13,6 @@ Misc  :
     2015:218:16:30:49 0 165 63 1421.5000 162.000 1125.714 8.19 36.980 211.928 0.00 0.00 Sun 1420.497 1422.503 0.009375 2.400 2.000 256 1048576 214 5 0.781 0
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 '''
-
 # import modules
 from argparse import ArgumentParser
 from os import system as _SYSTEM_

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import numpy as np
 from matplotlib import font_manager
 import matplotlib.pyplot as plt
@@ -7,9 +8,13 @@ from astropy.time import Time
 import matplotlib.dates as mdates
 from scipy.signal import medfilt as medfilt
 from time import gmtime, strftime, localtime
+import argparse
+TIME=time()
 
-
-
+parser = argparse.ArgumentParser('Tries to pretty plot the current day and all sun data')
+parser.add_argument('-sp',dest='sp',action='store_true',help='Only plot short plots of single day')
+parser.add_argument('-lp',dest='lp',action='store_true',help='plot the long plots of all days')
+args = parser.parse_args()
 
 if args.sp:
     ##############################################################################
