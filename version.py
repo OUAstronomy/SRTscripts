@@ -8,7 +8,7 @@ Misc  : File for verifying version control of file versions and python version
 
 # Handling Package Version
 def package_version():
-    return "0.2"
+    return "0.3"
 
 def python_version():
     from sys import version_info

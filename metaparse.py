@@ -85,8 +85,9 @@ if __name__ == "__main__":
 
     # Initialize instance of an argument parser
     parser = ArgumentParser(description=description)
-    parser.add_argument('-n', '--input', type=str, help=in_help, dest='infile',default='')
-    parser.add_argument('-o','--o',type=str, help=f_help,dest='fout')
+    parser.add_argument('-i', '--input', type=str, help=in_help, dest='infile',required=True)
+    parser.add_argument('-o','--output',type=str, help=f_help,dest='fout',\
+        default='master_metaparse_{}_v{}.txt'.format(time.time(),__version__))
     parser.add_argument('--auto',action="store_true", help=a_help,dest='auto')
     parser.add_argument('-l', '--logger',type=str, help=log_help,dest='log')
     parser.add_argument('-v','--verbosity', help=v_help,default=2,dest='verb',type=int)
@@ -106,81 +107,47 @@ if __name__ == "__main__":
         logger = utilities.Messenger(verbosity=verbosity, add_timestamp=True,logfile=logfile)
     else:
         logger = utilities.Messenger(verbosity=verbosity, add_timestamp=False,logfile=logfile)
-    logger.header1("Starting {}....".format(__file__[:-3]))
+    logger.header2("Starting {}....".format(__file__[:-3]))
 
     logger.header2('This program will create and remove numerous temporary files for debugging.')
     logger.debug("Commandline Arguments: {}".format(args))
-    example_data(logger)
 
     _TEMP_ = str(time.time())
     _TEMP0_ = 'TEMPORARY_RM_ERROR_'+_TEMP_+'.txt'
     _TEMP1_ = 'TEMPORARY_METADATA_'+_TEMP_+'.txt'
     logger._REMOVE_(_TEMP_)
 
-    # if input file not specified
-    while (instring == ''):
-        try:
-            instring = logger.pyinput("unique identifying input file name")
-        except ValueError:
-            logger.warn("Please input a valid chars.")
-            continue
-        if not instring:
-            logger.warn("Please input a string")
-            continue
-        else:
-            break
-
-    # if output Line not specified
-    while (tmpname == '') or (not tmpname):
-        try:
-            answer = logger.pyinput("unique output filename string")
-        except ValueError:
-            logger.warn("Please input a valid chars.")
-            continue
-        if answer:
-            tmpname = answer
-            break
-
     # Read in the files
-    delfiles = [f for f in glob("master_metaparse_"+tmpname + "*") if _ISFILE_(f)]
-    logger.warn("Will delete:  {}".format(" | ".join(delfiles)))
-    logger.waiting(auto)
+    if _ISFILE_(tmpname):
+        logger.warn("Will overwrite:  {}".format(tmpname))
+    logger.waiting(auto,seconds=0)
 
     origfiles = [f for f in glob(instring+'*') if _ISFILE_(f)]
     if origfiles == []:
         origfiles.append(instring)
 
     logger.success('Files to be analyzed: {}'.format(','.join(origfiles)))
-    logger.waiting(auto)
+    logger.waiting(auto,seconds=0)
 
-    logger.waiting(auto)
-
-    logger._REMOVE_(delfiles)
-    logger._REMOVE_(_TEMP_)
+    logger.waiting(auto,seconds=0)
 
     for _NUM_,_FILE_ in enumerate(origfiles):
         # starting
-        logger.header1('#################################')
+        logger.header2('#################################')
         logger.header2("Running file: {}".format(_FILE_))
         k = prep(_FILE_,_TEMP0_)
-
-        # Read in the files    
-        outname1="master_metaparse_{}_{}_v{}.txt".format(tmpname,_NUM_,__version__)
 
         # running parse
         info_parse(_TEMP0_,_TEMP1_)
         logger.success("Finished file: {}".format(_FILE_))
-        logger.header1('#################################')
+        logger.header2('#################################')
 
         with open(_TEMP1_, 'r') as original: data = original.read()
-        with open(_TEMP1_, 'w') as modified: modified.write('Made from file: {}\n{}'.format(_FILE_ ,data))
-        _SYSTEM_("mv -f " + _TEMP1_ + " " + outname1)
-
-
-    madefiles = [f for f in glob('master_metaparse_' + tmpname+'*') if _ISFILE_(f)]
+        with open(_TEMP1_, 'w') as modified: modified.write('Version: {}...Made from file: {}\n{}'.format(__version__,_FILE_ ,data))
+        _SYSTEM_("mv -f " + _TEMP1_ + " " + tmpname)
 
     logger.success("Finished with all files: {}".format(' | '.join(origfiles)))
-    logger.header2("Made file(s): {}".format(' | '.join(madefiles)))
+    logger.header2("Made file: {} and logfile: {}".format(tmpname,logfile)) 
     logger._REMOVE_(_TEMP_)
 
 #############

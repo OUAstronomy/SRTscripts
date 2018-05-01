@@ -24,7 +24,6 @@ from srtutilities import *
 # import standard modules
 from sys import version_info,exit
 from os import system as _SYSTEM_
-import select
 from argparse import ArgumentParser
 from os.path import isfile as _ISFILE_
 from glob import glob
@@ -132,9 +131,10 @@ if __name__ == "__main__":
 
     # Initialize instance of an argument parser
     parser = ArgumentParser(description=description)
-    parser.add_argument('-n', '--input', type=str, help=in_help, dest='infile',required=True)
+    parser.add_argument('-i', '--input', type=str, help=in_help, dest='infile',required=True)
     parser.add_argument('-s', '--line', type=str, help=spec_help,dest='line',default='H1')
-    parser.add_argument('-o','--o',type=str, help=f_help,dest='fout',required=True)
+    parser.add_argument('-o','--output',type=str, help=f_help,dest='fout',\
+        default='master_specparse_{}_v{}.txt'.format(time.time(),__version__))
     parser.add_argument('--auto',action="store_true", help=a_help,dest='auto')
     parser.add_argument('-l', '--logger',type=str, help=log_help,dest='log')
     parser.add_argument('-v','--verbosity', help=v_help,default=2,dest='verb',type=int)
@@ -164,15 +164,15 @@ if __name__ == "__main__":
     _SPECTRA_ = LINES[_LINE_]
 
     # Read in the files
-    delfiles = [f for f in glob("master_specparse_"+tmpname + "*") if _ISFILE_(f)]
-    logger.warn("Will delete:  {}".format(" | ".join(delfiles)))
-    logger.waiting(auto)
+    if _ISFILE_(tmpname):
+        logger.warn("Will overwrite:  {}".format(tmpname))
+    logger.waiting(auto,seconds=0)
     files = [f for f in glob(instring+'*') if _ISFILE_(f)]
     if files == []:
         files.append(instring)
 
     logger.success('Files to be analyzed: {}'.format(','.join(files)))
-    logger.waiting(auto)
+    logger.waiting(auto,seconds=0)
 
     origfiles = files
     _TEMP_ = str(time.time())
@@ -180,7 +180,6 @@ if __name__ == "__main__":
     _TEMP1_ = 'TEMPORARY_1_SOURCE_'+_TEMP_+'.txt'
     _TEMP2_ = 'TEMPORARY__SOURCES_'+_TEMP_+'.txt'
     logger._REMOVE_(_TEMP_)
-    logger._REMOVE_(delfiles)
 
     # initialize arrays and constants
     all_first = []
@@ -264,7 +263,7 @@ if __name__ == "__main__":
                     count = 1
                 except ValueError:
                     logger.failure("Error in concat:")
-                    logger.waiting(auto)
+                    logger.waiting(auto,seconds=0)
                     logger.warn('Check file {}'.format(outname1))
                     exit('Quitting Program')
 
@@ -276,11 +275,13 @@ if __name__ == "__main__":
         logger.success("Finished file: " + origfiles[filenum])
         all_first.append(','.join(first_line))
 
-    outname3 = "master_specparse_" + tmpname + '_s_' + '_'.join(filenaming) + '_v'+ str(__version__) +".txt"
+    outname3 = tmpname
 
     logger._REMOVE_(outname3)
+    logger._REMOVE_(outname0)
+    logger._REMOVE_(outname1)
     with open(_TEMP2_, 'r') as original: data = original.read()
-    with open(_TEMP2_, 'w') as modified: modified.write('Made from files: {}\n{}\n{}\n'.format(','.join(files),' '.join(first_line),data))
+    with open(_TEMP2_, 'w') as modified: modified.write('Version:{}...Made from files: {}\n{}\n{}\n'.format(__version__,','.join(files),' '.join(first_line),data))
     _SYSTEM_('cp -f ' + _TEMP2_ + ' ' + outname3)
     logger._REMOVE_(_TEMP_)
 
@@ -289,7 +290,7 @@ if __name__ == "__main__":
     logger.success("Finished with all.")
     logger.debug("These are the sources processed: {}".format('|'.join(all_first)))
     
-    logger.header1("Made files:  {} and logfile: {}".format(outname3,logfile)) 
+    logger.header1("Made files: {} and logfile: {}".format(outname3,logfile)) 
 
     #############
     # end of code

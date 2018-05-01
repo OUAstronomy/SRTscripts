@@ -126,7 +126,7 @@ class plotter(object):
             if ((answer.lower() == "n") or (answer == "")):
                 self.save('{}_PLOT.pdf'.format(_TEMPB_))
                 break
-        self.logger.waiting(auto)
+        self.logger.waiting(auto,seconds=0)
         return msk_array
 
     def save(self,name):
@@ -187,12 +187,12 @@ if __name__ == "__main__":
     # Initialize instance of an argument parser
     #############################################################################
     parser = ArgumentParser(description=description)
-    parser.add_argument('-i', '--input', type=str, help=in_help, dest='fin',required=True)
+    parser.add_argument('-i','--input', type=str, help=in_help, dest='fin',required=True)
     parser.add_argument('-o','--output',type=str, help=f_help,dest='fout',required=True)
     parser.add_argument('-w','--work', help='print things to work on',dest='work',action='store_true')
-    parser.add_argument('-s', '--stdreg', type=str, help=std_help, dest='std')
+    parser.add_argument('-s','--stdreg', type=str, help=std_help, dest='std')
     parser.add_argument('--auto',action="store_true", help=a_help,dest='auto')
-    parser.add_argument('-l', '--logger',type=str, help=log_help,dest='log')
+    parser.add_argument('-l','--logger',type=str, help=log_help,dest='log')
     parser.add_argument('-v','--verbosity', help=v_help,default=2,dest='verb',type=int)
 
     # Get the arguments
@@ -218,9 +218,6 @@ if __name__ == "__main__":
     if worki is True:
         logger.success(spec_help)
         exit()
-    if auto == True:
-        logger.failure('Auto doesn\'t work with this version. Use the specplot_mosaic')
-        auto = False
     if args.std:
         logger.header2(std_help)
         logger.header2('Use these region ranges to apply a custom I.I. mask.\n'\
@@ -229,19 +226,6 @@ if __name__ == "__main__":
                        'You don\'t need the same range start and end, but the velocity'\
                        ' width should be the same')
         assert args.std in stdvals
-
-    # version control
-    #############################################################################
-    _VLINE_ = orig_datafile.split(".txt")[0].split("_v")[1]
-    try:
-        assert _VLINE_ == __version__
-    except AssertionError:
-        logger.warning('Input file version {} doesn\'t match programs version {}'.format(_VLINE_,__version__))
-        _A_ = logger.waiting(auto)
-        if (_A_ == ' ') or (_A_.lower() == 'n'):
-            exit()
-        else:
-            logger.message('Continuing...')
 
     # handle files
     #############################################################################
@@ -259,7 +243,7 @@ if __name__ == "__main__":
     _TEMP2_ = '{}_2.txt'.format(_TEMPB_)                          # holds parameters
     _TEMP3_ = []
 
-    logger.waiting(auto)
+    logger.waiting(auto,seconds=0)
     logger._REMOVE_(files)
     logger._REMOVE_(_TEMPB_)
     _SYSTEM_('cp -f ' + orig_datafile + ' ' + datafile)
@@ -274,6 +258,19 @@ if __name__ == "__main__":
         first_line=f.readline().strip('\n').split(" ")
     _SYSTEM_("sed -i '1d' " + datafile)
     data = ascii.read(datafile)
+
+    # version control
+    #############################################################################
+    try:
+        _VLINE_ = first.split('\n')[0].split(':')[1].split('...')[0]
+        assert _VLINE_ == __version__
+    except AssertionError:
+        logger.warning('Input file version {} doesn\'t match programs version {}'.format(_VLINE_,__version__))
+        _A_ = logger.waiting(auto,seconds=0)
+        if (_A_ == ' ') or (_A_.lower() == 'n'):
+            exit()
+        else:
+            logger.message('Continuing...')
 
     # to verify correct input
     #############################################################################
@@ -366,7 +363,7 @@ if __name__ == "__main__":
         mask_tot = np.linspace(0,len(data)-1,num=len(data))
         mask = np.delete(mask_tot,mask_inv)
         mask = [int(x) for x in mask]
-        logger.waiting(auto)
+        logger.waiting(auto,seconds=0)
 
         # show projected baselines
         reset.resetplot('Projected Baselines')
@@ -400,7 +397,7 @@ if __name__ == "__main__":
             # fitting polynomial 4th order to baseline
             fit = np.polyfit(data[col1][mask],data[col2][mask],polynumfit)
             fit_fn = np.poly1d(fit)
-            logger.waiting(auto)
+            logger.waiting(auto,seconds=0)
 
             # plotting fitted baseline to original image
             
@@ -410,7 +407,7 @@ if __name__ == "__main__":
             reset.draw()
             newask = logger.pyinput('(y or [RET]/n or [SPACE]) Was this acceptable? ')
             if (newask.lower() == 'y') or (newask == ''):
-                logger.waiting(auto)
+                logger.waiting(auto,seconds=0)
                 with open(_TEMP2_,'a') as _T_:
                     _T_.write("The polynomial is: \n {}\n".format(fit_fn))
                 break
@@ -431,14 +428,14 @@ if __name__ == "__main__":
         logger.message('RMS Noise: {}K'.format(rms))
         with open(_TEMP2_,'a') as _T_:
             _T_.write('RMS Noise: {}K\n'.format(rms))
-        logger.waiting(auto)
+        logger.waiting(auto,seconds=0)
 
         # plotting the corrected baseline
         reset.resetplot('Plotting the corrected baseline')
         reset.plot(data[col1],spectra_blcorr,'data',color='black',linestyle='steps',label='data')
         reset.plot([minvel,maxvel],[0,0],'baseline',color='red',linestyle='steps',label='flat baseline')
         reset.draw()
-        logger.waiting(auto)
+        logger.waiting(auto,seconds=0)
         outfilename_iter +=1
         _TEMPNAME = "{}_{}.pdf".format(outfilename,outfilename_iter)
         _TEMP3_.append(_TEMPNAME)
@@ -545,7 +542,7 @@ if __name__ == "__main__":
             reset.draw()
             newask = logger.pyinput('(y or [RET]/n or [SPACE]) Is this acceptable? ')
             if (newask.lower() == 'y') or (newask == ''):
-                logger.waiting(auto)
+                logger.waiting(auto,seconds=0)
                 with open(_TEMP2_,'a') as _T_:
                     _T_.write("The function is: \n{}\n".format(rfi_fit_fn))
                 break
@@ -564,7 +561,7 @@ if __name__ == "__main__":
         corr.plot([minvel,maxvel],[0,0],'flat',color='red',linestyle='steps',label='flat baseline')
         corr.limits(ylim=(-1,1.2*max(spectra_blcorr)))
         corr.draw()
-        logger.waiting(auto)
+        logger.waiting(auto,seconds=0)
         outfilename_iter +=1
         _TEMPNAME = "{}_{}.pdf".format(outfilename,outfilename_iter)
         _TEMP3_.append(_TEMPNAME)
@@ -577,7 +574,7 @@ if __name__ == "__main__":
         final.limits(xlim=(minvel,maxvel),ylim=(mint-1,maxt * 1.1))
         final.plot(data[col1],spectra_blcorr,'data',color='black',linestyle='steps',label='data')
         final.draw()
-        logger.waiting(auto)
+        logger.waiting(auto,seconds=0)
         outfilename_iter +=1
         _TEMPNAME = "{}_{}.pdf".format(outfilename,outfilename_iter)
         _TEMP3_.append(_TEMPNAME)
@@ -635,7 +632,7 @@ if __name__ == "__main__":
             lie.plot([minint,minint],[0,maxt],'lower',color='blue',linestyle='dotted')
             lie.plot([maxint,maxint],[0,maxt],'upper',color='blue',linestyle='dotted')
             lie.draw()
-            logger.waiting(auto)
+            logger.waiting(auto,seconds=0)
             outfilename_iter +=1
             _TEMPNAME = "{}_{}.pdf".format(outfilename,outfilename_iter)
             _TEMP3_.append(_TEMPNAME)
@@ -660,7 +657,7 @@ if __name__ == "__main__":
                         intensity_mask_array = lasso.selection('data')
                         intensity_mask = []
 
-                        logger.waiting(auto)
+                        logger.waiting(auto,seconds=0)
                         for i in range(len(intensity_mask_array)):
                             intensity_mask = np.append(intensity_mask,np.where(data[col1] == intensity_mask_array[i]))
                         intensity_mask = [int(x) for x in intensity_mask]
@@ -689,7 +686,7 @@ if __name__ == "__main__":
             intensitymask.plot([minint,minint],[0,maxt],'lower',color='blue',linestyle='dotted')
             intensitymask.plot([maxint,maxint],[0,maxt],'upper',color='blue',linestyle='dotted')
             intensitymask.draw()
-            logger.waiting(auto)
+            logger.waiting(auto,seconds=0)
             outfilename_iter +=1
             _TEMPNAME = "Final.{}_{}.pdf".format(outfilename,outfilename_iter)
             #_TEMP3_.append(_TEMPNAME)
