@@ -15,6 +15,8 @@ parser = argparse.ArgumentParser('Tries to pretty plot the current day and all s
 parser.add_argument('-sp',dest='sp',action='store_true',help='Only plot short plots of single day')
 parser.add_argument('-lp',dest='lp',action='store_true',help='plot the long plots of all days')
 args = parser.parse_args()
+cwd = os.get_cwd()
+os.chdir('/home/jjtobin/RealTime-Sun/')
 
 if args.sp:
     ##############################################################################
@@ -168,3 +170,6 @@ if args.lp:
     ax.xaxis.set_major_formatter(myFmt)
     plt.tight_layout()
     plt.savefig('sun-current.all.png')
+
+
+os.chdir(cwd)
