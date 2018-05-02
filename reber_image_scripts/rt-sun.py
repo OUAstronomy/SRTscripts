@@ -63,13 +63,13 @@ if args.sp:
     ##############################################################################
     # short time plot
     ##############################################################################
-    tstart=Time(strftime('%Y:%j:23:00:00', localtime()),format='yday',scale='utc')
+    #ti=Time(strftime('%Y:%j:24:00:00', localtime()),format='yday',scale='utc')
     tstart=Time(strftime('%Y:%j:12:00:00', localtime()),format='yday',scale='utc')
     plt.clf()
 
     fig=plt.figure(figsize=(10,7))
     ax = fig.add_subplot(111)
-    ax.set_xlim(tstart.mjd,tstart.mjd+0.042*12.0)
+    ax.set_xlim(tstart.mjd,tstart.mjd+0.042*14.0)
     ax.set_ylim(0,1.01*max(tantdata))
 
     Tant_smooth = medfilt(tantdata, 15)
