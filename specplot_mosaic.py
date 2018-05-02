@@ -215,19 +215,6 @@ if __name__ == "__main__":
     logger.header1("Starting {}....".format(__file__[:-3]))
     logger.debug("Commandline Arguments: {}".format(args))
     
-    # version control
-    #############################################################################
-    try:
-        _VLINE_ = first.split('\n')[0].split(':')[1].split('...')[0]
-        assert _VLINE_ == __version__
-    except AssertionError:
-        logger.warning('Input file version {} doesn\'t match programs version {}'.format(_VLINE_,__version__))
-        _A_ = logger.waiting(auto,seconds=0)
-        if (_A_ == ' ') or (_A_.lower() == 'n'):
-            exit()
-        else:
-            logger.message('Continuing...')
-
     # handle files
     #############################################################################
     files = [f for f in glob('*'+ooutfilename+'*') if isfile(f)]
