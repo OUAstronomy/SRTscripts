@@ -29,6 +29,22 @@ from os.path import isfile as _ISFILE_
 from glob import glob
 import time
 
+
+# preps the data file, returns the data from the file
+def prep(orig,inputfile,returndata=False):
+    _SYSTEM_('cp -f {} {}'.format(orig,inputfile))
+    _SYSTEM_("sed -i '/entered/d' {}".format(inputfile))
+    _SYSTEM_("sed -i '/cmd out of limits/d' {}".format(inputfile))
+    _SYSTEM_("sed -i '/Scan/d' {}".format(inputfile))
+    _SYSTEM_("sed -i 's/ MHz / /g' {}".format(inputfile))
+    _SYSTEM_("sed -i '/*/d' {}".format(inputfile))
+
+    if returndata:
+        with open(inputfile,'r') as f:
+            f.seek(0)
+            allines = [[x for x in line.strip('\n').split(' ') if x != ''] for line in f.readlines()]
+        return allines
+
 # import astropy 
 from astropy.io import ascii
 from astropy.table import Table
@@ -159,7 +175,6 @@ if __name__ == "__main__":
     logger.debug("Commandline Arguments: {}".format(args))
 
     logger.header2('This program will create and remove numerous temporary files for debugging.')
-    example_data(logger)
 
     _SPECTRA_ = LINES[_LINE_]
 
