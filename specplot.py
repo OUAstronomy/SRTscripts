@@ -232,7 +232,7 @@ if __name__ == "__main__":
     files = [f for f in glob(ooutfilename+'*') if isfile(f)]
     if files == []:
         files = ['None',]
-    logger.failure("Will remove these files: {}\n".format(' | '.join(files)))
+    logger.failure("Will overwrite these files: {}\n".format(' | '.join(files)))
     logger.warn('Move these to a directory if you don\'t want these deleted')
 
     _TEMP_ = str(time.time())

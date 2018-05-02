@@ -59,8 +59,10 @@ final = []
 for x in files:
     with open(x,'r') as f:
         alllines = f.readlines()
-    
-    final.append(['G'+alllines[0].split('G')[1].strip('\n'),alllines[-1]])
+    try:
+        final.append(['G'+alllines[0].split('G')[1].strip('\n'),alllines[-1]])
+    except:
+        final.append(['S'+alllines[0].split('S')[1].strip('\n'),alllines[-1]])
 
 # function for formatting
 def addspace(sstring,spacing=args.s):

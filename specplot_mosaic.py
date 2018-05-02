@@ -89,13 +89,16 @@ class plotter(object):
 
     def open(self,numsubs=(1,1),xlabel=None,ylabel=None):
         self.numsubs = numsubs
+        self.f = plt.subplots(nrows=numsubs[0], ncols=numsubs[1],figsize=self.size)
+        self.formats(xlabel,ylabel)
+
+    def formats(self,xlabel=None,ylabel=None):
         self.xlabel = xlabel
         self.ylabel = ylabel
-        self.f = plt.subplots(nrows=numsubs[0], ncols=numsubs[1],figsize=self.size)
         self.f[1].tick_params('both', which='major', length=15, width=1, pad=15)
         self.f[1].tick_params('both', which='minor', length=7.5, width=1, pad=15)
-        self.f[1].set_ylabel(ylabel, fontsize=18)
-        self.f[1].set_xlabel(xlabel, fontsize=18)
+        self.f[1].set_ylabel(self.ylabel, fontsize=18)
+        self.f[1].set_xlabel(self.xlabel, fontsize=18)
         self.f[1].set_title(self.title)
 
     def scatter(self,x,y,datalabel,**kwargs):
@@ -135,10 +138,10 @@ class plotter(object):
         plt.savefig(name)
 
     def resetplot(self,title):
-        plt.clf()
         self.title = title
         self.data = {}
-        self.open(self.numsubs,self.xlabel,self.ylabel)
+        self.f[1].cla()
+        self.formats(self.xlabel,self.ylabel)
         self.limits()
 
     def limits(self,xlim=None,ylim=None):
@@ -169,7 +172,7 @@ if __name__ == "__main__":
     # -----------------------
     # Argument Parser Setup
     # -----------------------
-    description = 'Reads in masterfile output from all_hispec.py and reduces. ' \
+    description = 'Reads in masterfile output from specparse.py and reduces. ' \
                   'Will flatten baselines, remove RFI, and find the integrated intensity.\n' \
                   'This code isn\'t generalized. the process is as follows: reduce 1 source\n'\
                   '{} Version: {} {}'.format(colours.WARNING,__version__,colours._RST_)
@@ -201,7 +204,7 @@ if __name__ == "__main__":
     #############################################################################
     args = parser.parse_args()
     orig_datafile = args.fin
-    ooutfilename  = args.fout
+    ooutfilename  = 'specplot.' + args.fout
     logfile       = args.log
     verbosity     = args.verb
     auto = False
@@ -232,7 +235,6 @@ if __name__ == "__main__":
     _TEMP3_ = []
 
     logger.waiting(auto)
-    logger._REMOVE_(files)
     logger._REMOVE_(_TEMP_)
     _SYSTEM_('cp -f ' + orig_datafile + ' ' + datafile)
 
@@ -284,6 +286,7 @@ if __name__ == "__main__":
     while total_num < len(first_line):
         if countings == 1:
             total_num = first_line.index(acstart)
+            retry = 0
             countings = 0
         if total_num == 0:  
             countings = 0  
@@ -326,13 +329,13 @@ if __name__ == "__main__":
             x1label = r'V$_{lsr}$ (km/s)'
             ylabel = 'Antenna Temperature (K)'
 
-            rawfig = plotter('Raw Data Lasso',logger)
-            rawfig.int()
-            rawfig.open((1,1),x1label,ylabel)
-            rawfig.scatter(spectra_x,spectra_y,'scatter raw')
-            rawfig.plot(spectra_x,spectra_y,'line raw',color='red',linestyle='steps')
+            interactive = plotter('Raw Data Lasso',logger)
+            interactive.int()
+            interactive.open((1,1),x1label,ylabel)
+            interactive.scatter(spectra_x,spectra_y,'scatter raw')
+            interactive.plot(spectra_x,spectra_y,'line raw',color='red',linestyle='steps')
             # prepare mask
-            rawfig.draw()
+            interactive.draw()
             # baseline
             baseline_med=np.median(spectra_y)/1.02
             baseline_ul=baseline_med*1.02
@@ -341,18 +344,18 @@ if __name__ == "__main__":
                 _T_.write('Median of baseline: {} and 2sigma baseline {}'.format(baseline_med,baseline_ul))
 
             # actual defining mask
-            msk_array = rawfig.selection('scatter raw')
+            msk_array = interactive.selection('scatter raw')
 
             # draw and reset
             
-            reset = plotter('Raw Data',logger)
-            reset.open((1,1),x1label,ylabel)
-            reset.plot(spectra_x,spectra_y,'raw data',color='black',linestyle='steps')
-            reset.draw()
+            mainplot = plotter('Raw Data',logger)
+            mainplot.open((1,1),x1label,ylabel)
+            mainplot.plot(spectra_x,spectra_y,'raw data',color='black',linestyle='steps')
+            mainplot.draw()
             outfilename_iter =0
             _TEMPNAME = "{}_{}.pdf".format(outfilename,outfilename_iter)
             _TEMP3_.append(_TEMPNAME)
-            reset.save(_TEMPNAME)
+            mainplot.save(_TEMPNAME)
 
             # need to invert mask to polyfit region
             mask_inv = []
@@ -363,15 +366,15 @@ if __name__ == "__main__":
             mask = [int(x) for x in mask]
 
             # show projected baselines
-            reset.resetplot('Projected Baselines')
-            reset.plot(spectra_x,spectra_y,'raw',color='black',linestyle='steps')
-            reset.plot([minvel,maxvel],[baseline_med,baseline_med],'lower',color='red',linestyle='steps')
-            reset.plot([minvel,maxvel],[baseline_ul,baseline_ul],'upper',color='red',linestyle='steps')
-            reset.draw()
+            mainplot.resetplot('Projected Baselines')
+            mainplot.plot(spectra_x,spectra_y,'raw',color='black',linestyle='steps')
+            mainplot.plot([minvel,maxvel],[baseline_med,baseline_med],'lower',color='red',linestyle='steps')
+            mainplot.plot([minvel,maxvel],[baseline_ul,baseline_ul],'upper',color='red',linestyle='steps')
+            mainplot.draw()
             outfilename_iter +=1
             _TEMPNAME = "{}_{}.pdf".format(outfilename,outfilename_iter)
             _TEMP3_.append(_TEMPNAME)
-            reset.save(_TEMPNAME)
+            mainplot.save(_TEMPNAME)
 
             # fitting baseline to higher order polynomial
             newask = ' '
@@ -397,10 +400,10 @@ if __name__ == "__main__":
 
                 # plotting fitted baseline to original image
                 
-                reset.resetplot('Plotting fitted baseline')
-                reset.plot(spectra_x,spectra_y,'data',color='black',linestyle='steps',label='data')
-                reset.plot(spectra_x,fit_fn(spectra_x),'model',color='red',linestyle='steps',label='model')
-                reset.draw()
+                mainplot.resetplot('Plotting fitted baseline')
+                mainplot.plot(spectra_x,spectra_y,'data',color='black',linestyle='steps',label='data')
+                mainplot.plot(spectra_x,fit_fn(spectra_x),'model',color='red',linestyle='steps',label='model')
+                mainplot.draw()
                 newask = logger.pyinput('(y or [RET]/n or [SPACE]) Was this acceptable? ')
                 if (newask.lower() == 'y') or (newask == ''):
                     with open(_TEMP2_,'a') as _T_:
@@ -412,7 +415,7 @@ if __name__ == "__main__":
             outfilename_iter +=1
             _TEMPNAME = "{}_{}.pdf".format(outfilename,outfilename_iter)
             _TEMP3_.append(_TEMPNAME)
-            reset.save(_TEMPNAME)
+            mainplot.save(_TEMPNAME)
 
         # defining corrected spectra
         spectra_blcorr=args.spec * (deepcopy(spectra_y)-divisor(spectra_x))
@@ -429,27 +432,26 @@ if __name__ == "__main__":
 
         # plotting the corrected baseline
         if (total_num == 0) or (retry != -99):
-            reset.resetplot('Plotting the corrected baseline')
-            reset.plot(spectra_x,spectra_blcorr,'data',color='black',linestyle='steps',label='data')
-            reset.plot([minvel,maxvel],[0,0],'baseline',color='red',linestyle='steps',label='flat baseline')
-            reset.draw()
+            mainplot.resetplot('Plotting the corrected baseline')
+            mainplot.plot(spectra_x,spectra_blcorr,'data',color='black',linestyle='steps',label='data')
+            mainplot.plot([minvel,maxvel],[0,0],'baseline',color='red',linestyle='steps',label='flat baseline')
+            mainplot.draw()
             outfilename_iter +=1
             _TEMPNAME = "{}_{}.pdf".format(outfilename,outfilename_iter)
             _TEMP3_.append(_TEMPNAME)
-            reset.save(_TEMPNAME)
+            mainplot.save(_TEMPNAME)
 
             # define the RFI
             print('Only select noise not falling on the signal, only on baselines...')
-            lasso = plotter('Lasso selection:',logger)
-            lasso.int()
-            lasso.open((1,1),x1label,ylabel)
-            lasso.scatter(spectra_x,spectra_blcorr,'data',color='black',label='datapoints')
-            lasso.plot(spectra_x,spectra_blcorr,'rfi',color='blue',linestyle='steps',label='rfi')
-            lasso.plot([minvel,maxvel],[0,0],'flat',color='red',linestyle='steps',label='flat baseline')
-            lasso.draw()
+            interactive.resetplot('Lasso selection:')
+            interactive.formats(x1label,ylabel)
+            interactive.scatter(spectra_x,spectra_blcorr,'data',color='black',label='datapoints')
+            interactive.plot(spectra_x,spectra_blcorr,'rfi',color='blue',linestyle='steps',label='rfi')
+            interactive.plot([minvel,maxvel],[0,0],'flat',color='red',linestyle='steps',label='flat baseline')
+            interactive.draw()
 
             temp = []
-            rfi_mask_array = lasso.selection('data')
+            rfi_mask_array = interactive.selection('data')
             rfi_mask = []
 
             newask = ' '
@@ -514,32 +516,32 @@ if __name__ == "__main__":
 
                     # plotting fitted baseline to original image
                     
-                    reset.resetplot('Plotting RFI removal')
+                    mainplot.resetplot('Plotting RFI removal')
                     if _TRY_ == 1:
                         for _RFI_ in rfi_mask:
                             logger.debug("Region of RFI: {}".format(_TEMPSPEC_[_RFI_]))
                             _TEMPSPEC_[_RFI_] = rfi_poly_fn(spectra_x[_RFI_]) 
                             logger.debug("Region of RFI after fit: {}".format(_TEMPSPEC_[_RFI_]))
-                        reset.plot(spectra_x,rfi_poly_fn(spectra_x),'polyfit',color='yellow',linestyle='steps',label='Poly model')
+                        mainplot.plot(spectra_x,rfi_poly_fn(spectra_x),'polyfit',color='yellow',linestyle='steps',label='Poly model')
                     elif _TRY_ == 2:
                         for _RFI_ in rfi_mask:
                             logger.debug("Region of RFI: {}".format(_TEMPSPEC_[_RFI_]))
                             _TEMPSPEC_[_RFI_] = gauss(spectra_x[_RFI_],*_params1)
                             logger.debug("Region of RFI after fit: {}".format(_TEMPSPEC_[_RFI_]))
-                        reset.plot(spectra_x,gauss(spectra_x,*_params1),'gauss',color='red',linestyle='steps',label='Gauss model')
+                        mainplot.plot(spectra_x,gauss(spectra_x,*_params1),'gauss',color='red',linestyle='steps',label='Gauss model')
                     elif _TRY_ == 3:
                         for _RFI_ in rfi_mask:
                             logger.debug("Region of RFI: {}".format(_TEMPSPEC_[_RFI_]))
                             _TEMPSPEC_[_RFI_] = bimodal(spectra_x[_RFI_],*_params2)
                             logger.debug("Region of RFI after fit: {}".format(_TEMPSPEC_[_RFI_]))
-                        reset.plot(spectra_x,bimodal(spectra_x,*_params2),'bimodal',color='orange',linestyle='steps',label='Bimodal model')
+                        mainplot.plot(spectra_x,bimodal(spectra_x,*_params2),'bimodal',color='orange',linestyle='steps',label='Bimodal model')
                 except RuntimeError:
                     logger.failure('Couldn\'t converge on try {}, setting values to zero...'.format(_TRY_))
                     rfi_fit_fn = "Fitter failed...."
                     _TEMPSPEC_[rfi_mask] = 0.0            
-                reset.plot(spectra_x,_TEMPSPEC_,'data',color='black',linestyle='steps',label='data')
-                reset.limits(ylim=(-1,1.2*max(spectra_blcorr)))
-                reset.draw()
+                mainplot.plot(spectra_x,_TEMPSPEC_,'data',color='black',linestyle='steps',label='data')
+                mainplot.limits(ylim=(-1,1.2*max(spectra_blcorr)))
+                mainplot.draw()
                 newask = logger.pyinput('(y or [RET]/n or [SPACE]) Is this acceptable? ')
                 if (newask.lower() == 'y') or (newask == ''):
                     with open(_TEMP2_,'a') as _T_:
@@ -556,28 +558,27 @@ if __name__ == "__main__":
             pass
 
         if (total_num == 0) or (retry != -99):
-            corr = plotter("Corrected Baseline and RFI removed",logger)
-            corr.open((1,1),x1label,ylabel)
-            corr.plot(spectra_x,spectra_blcorr,'corrected',color='black',linestyle='steps',label='corrected')
-            corr.plot([minvel,maxvel],[0,0],'flat',color='red',linestyle='steps',label='flat baseline')
-            corr.limits(ylim=(-1,1.2*max(spectra_blcorr)))
-            corr.draw()
+            mainplot.formats(x1label,ylabel)
+            mainplot.plot(spectra_x,spectra_blcorr,'corrected',color='black',linestyle='steps',label='corrected')
+            mainplot.plot([minvel,maxvel],[0,0],'flat',color='red',linestyle='steps',label='flat baseline')
+            mainplot.limits(ylim=(-1,1.2*max(spectra_blcorr)))
+            mainplot.draw()
             outfilename_iter +=1
             _TEMPNAME = "{}_{}.pdf".format(outfilename,outfilename_iter)
             _TEMP3_.append(_TEMPNAME)
-            corr.save(_TEMPNAME)
+            mainplot.save(_TEMPNAME)
 
             # Final correction plot 
             
-            final = plotter('Final corrected plot',logger)
-            final.open((1,1),x1label,ylabel)
-            final.limits(xlim=(minvel,maxvel),ylim=(mint-1,maxt * 1.1))
-            final.plot(spectra_x,spectra_blcorr,'data',color='black',linestyle='steps',label='data')
-            final.draw()
+            mainplot.resetplot('Final corrected plot')
+            mainplot.formats(x1label,ylabel)
+            mainplot.limits(xlim=(minvel,maxvel),ylim=(mint-1,maxt * 1.1))
+            mainplot.plot(spectra_x,spectra_blcorr,'data',color='black',linestyle='steps',label='data')
+            mainplot.draw()
             outfilename_iter +=1
             _TEMPNAME = "{}_{}.pdf".format(outfilename,outfilename_iter)
             _TEMP3_.append(_TEMPNAME)
-            final.save(_TEMPNAME)
+            mainplot.save(_TEMPNAME)
 
             # intensity estimate
             while True:
@@ -625,18 +626,18 @@ if __name__ == "__main__":
 
         if (total_num == 0) or (retry != -99):
             # Intensity line estimate
-            lie = plotter('Intensity Line Estimate',logger)
-            lie.open((1,1),x1label,ylabel)
-            lie.limits(xlim=(minvel,maxvel),ylim=(mint-1,maxt * 1.1))
-            lie.plot(spectra_x,spectra_blcorr,'data',color='black',linestyle='steps',label='data')
-            lie.plot(spectra_x[intensity_mask_guess],np.zeros(len(spectra_x[intensity_mask_guess])),'est',color='blue',linestyle='dotted')
-            lie.plot([minint,minint],[0,maxt],'lower',color='blue',linestyle='dotted')
-            lie.plot([maxint,maxint],[0,maxt],'upper',color='blue',linestyle='dotted')
-            lie.draw()
+            mainplot.resetplot('Intensity Line Estimate')
+            mainplot.formats(x1label,ylabel)
+            mainplot.limits(xlim=(minvel,maxvel),ylim=(mint-1,maxt * 1.1))
+            mainplot.plot(spectra_x,spectra_blcorr,'data',color='black',linestyle='steps',label='data')
+            mainplot.plot(spectra_x[intensity_mask_guess],np.zeros(len(spectra_x[intensity_mask_guess])),'est',color='blue',linestyle='dotted')
+            mainplot.plot([minint,minint],[0,maxt],'lower',color='blue',linestyle='dotted')
+            mainplot.plot([maxint,maxint],[0,maxt],'upper',color='blue',linestyle='dotted')
+            mainplot.draw()
             outfilename_iter +=1
             _TEMPNAME = "{}_{}.pdf".format(outfilename,outfilename_iter)
             _TEMP3_.append(_TEMPNAME)
-            lie.save(_TEMPNAME)
+            mainplot.save(_TEMPNAME)
 
             while True:
                 try:
@@ -646,11 +647,11 @@ if __name__ == "__main__":
                         break
                     else:
                         # define the Intensity
-                        lasso.resetplot('Lasso selection:')
-                        lasso.scatter(spectra_x,spectra_blcorr,'data',color='black')
-                        lasso.plot(spectra_x,spectra_blcorr,'dataselect',color='blue',linestyle='steps')
-                        lasso.plot([minvel,maxvel],[0,0],'int',color='red',linestyle='steps')
-                        lasso.draw()
+                        interactive.resetplot('Lasso selection:')
+                        interactive.scatter(spectra_x,spectra_blcorr,'data',color='black')
+                        interactive.plot(spectra_x,spectra_blcorr,'dataselect',color='blue',linestyle='steps')
+                        interactive.plot([minvel,maxvel],[0,0],'int',color='red',linestyle='steps')
+                        interactive.draw()
                         # recovering intensity of line 
                         temp = []
                         intensity_mask_array = lasso.selection('data')
@@ -664,28 +665,28 @@ if __name__ == "__main__":
                         minint=min(spectra_x[intensity_mask])
                         maxint=max(spectra_x[intensity_mask])
                         
-                        reset.resetplot('With Line Intensity Mask')
-                        reset.plot(spectra_x,spectra_blcorr,'data',color='black',linestyle='steps')
-                        reset.plot(spectra_x[intensity_mask],np.zeros(len(spectra_x[intensity_mask])),'bottom',color='blue',linestyle='dotted')
-                        reset.plot([minint,minint],[0,maxt],'lower',color='blue',linestyle='dotted')
-                        reset.plot([maxint,maxint],[0,maxt],'upper',color='blue',linestyle='dotted')                
-                        reset.draw()
+                        mainplot.resetplot('With Line Intensity Mask')
+                        mainplot.plot(spectra_x,spectra_blcorr,'data',color='black',linestyle='steps')
+                        mainplot.plot(spectra_x[intensity_mask],np.zeros(len(spectra_x[intensity_mask])),'bottom',color='blue',linestyle='dotted')
+                        mainplot.plot([minint,minint],[0,maxt],'lower',color='blue',linestyle='dotted')
+                        mainplot.plot([maxint,maxint],[0,maxt],'upper',color='blue',linestyle='dotted')                
+                        mainplot.draw()
                         break
                 except ValueError:
                     continue
 
-            intensitymask = plotter('Intensity Mask',logger)
-            intensitymask.open((1,1),x1label,ylabel)
-            intensitymask.limits(xlim=(minvel,maxvel),ylim=(mint,maxt * 1.1))
-            intensitymask.plot(spectra_x,spectra_blcorr,'data',color='black',linestyle='steps',label='Data')
-            intensitymask.plot(spectra_x[intensity_mask],np.zeros(len(spectra_x[intensity_mask])),'bottom',color='blue',linestyle='dotted')
-            intensitymask.plot([minint,minint],[0,maxt],'lower',color='blue',linestyle='dotted')
-            intensitymask.plot([maxint,maxint],[0,maxt],'upper',color='blue',linestyle='dotted')
-            intensitymask.draw()
+            mainplot.resetplot('Intensity Mask')
+            mainplot.formats(x1label,ylabel)
+            mainplot.limits(xlim=(minvel,maxvel),ylim=(mint,maxt * 1.1))
+            mainplot.plot(spectra_x,spectra_blcorr,'data',color='black',linestyle='steps',label='Data')
+            mainplot.plot(spectra_x[intensity_mask],np.zeros(len(spectra_x[intensity_mask])),'bottom',color='blue',linestyle='dotted')
+            mainplot.plot([minint,minint],[0,maxt],'lower',color='blue',linestyle='dotted')
+            mainplot.plot([maxint,maxint],[0,maxt],'upper',color='blue',linestyle='dotted')
+            mainplot.draw()
             outfilename_iter +=1
             _TEMPNAME = "Final.{}_{}.pdf".format(outfilename,outfilename_iter)
-            intensitymask.save(_TEMPNAME)
-            intensitymask.draw()
+            mainplot.save(_TEMPNAME)
+            mainplot.draw()
             logger.waiting(auto)
             plt.show()
             if retry != -99:
@@ -724,11 +725,13 @@ if __name__ == "__main__":
             maxt = np.max(spectra_blcorr)
 
             if (args.plot):
-                plt.figure('Intensity Mask')
-                plt.plot(spectra_x,spectra_blcorr,color='black',linestyle='steps',label='Data')
-                plt.plot([minint,minint],[0,maxt],color='blue',linestyle='dotted')
-                plt.plot([maxint,maxint],[0,maxt],color='blue',linestyle='dotted')
-                plt.draw()
+                mainplot.resetplot('Intensity Mask')
+                mainplot.formats(x1label,ylabel)
+                mainplot.plot(spectra_x,spectra_blcorr,'data',color='black',linestyle='steps',label='Data')
+                mainplot.plot([min(spectra_x),max(spectra_x)],[0,0],'bottom',color='red',linestyle='dotted',label='Baseline')
+                mainplot.plot([minint,minint],[0,maxt],'lower',color='blue',linestyle='dotted')
+                mainplot.plot([maxint,maxint],[0,maxt],'upper',color='blue',linestyle='dotted')
+                mainplot.draw()
                 outfilename_iter +=1
                 _TEMPNAME = "Final.{}_{}.pdf".format(outfilename,outfilename_iter)
                 plt.savefig(_TEMPNAME)

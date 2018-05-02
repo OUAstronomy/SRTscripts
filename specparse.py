@@ -150,7 +150,7 @@ if __name__ == "__main__":
     parser.add_argument('-i', '--input', type=str, help=in_help, dest='infile',required=True)
     parser.add_argument('-s', '--line', type=str, help=spec_help,dest='line',default='H1')
     parser.add_argument('-o','--output',type=str, help=f_help,dest='fout',\
-        default='master_specparse_{}_v{}.txt'.format(time.time(),__version__))
+        default='specparse_{}_v{}.txt'.format(time.time(),__version__))
     parser.add_argument('--auto',action="store_true", help=a_help,dest='auto')
     parser.add_argument('-l', '--logger',type=str, help=log_help,dest='log')
     parser.add_argument('-v','--verbosity', help=v_help,default=2,dest='verb',type=int)
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     # Get the arguments
     args = parser.parse_args()
     instring = args.infile
-    tmpname = args.fout
+    tmpname = 'specparse.' + args.fout
     _LINE_ = args.line
     auto = args.auto
     logfile = args.log
