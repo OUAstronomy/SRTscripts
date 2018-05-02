@@ -213,7 +213,7 @@ if __name__ == "__main__":
         logger.header2("#################################")
         logger.message("Running file: {}".format(origfiles[filenum]))
         # creating temp file and removing errors
-        k = prep(origfiles[filenum],_TEMP0_)
+        k = prep(origfiles[filenum],_TEMP0_,returndata=True)
 
         # creating source list
         for i,j in enumerate(k):
