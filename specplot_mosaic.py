@@ -283,6 +283,7 @@ if __name__ == "__main__":
     # actual plotting now
     #############################################################################
     total_num = 0
+    tempcount = 0
     while total_num < len(first_line):
         if countings == 1:
             total_num = first_line.index(acstart)
@@ -623,7 +624,7 @@ if __name__ == "__main__":
 
         #print('Made it to intensity')
         autoask = 'y'
-    
+
         try:
             if minint > 0:
                 pass
@@ -758,23 +759,29 @@ if __name__ == "__main__":
             maxt = np.max(spectra_blcorr)
 
             if (args.plot):
-                mainplot.resetplot('Intensity Mask')
-                mainplot.formats(x1label,ylabel)
-                mainplot.plot(spectra_x,spectra_blcorr,'data',color='black',linestyle='steps',label='Data')
-                mainplot.plot([min(spectra_x),max(spectra_x)],[0,0],'bottom',color='red',linestyle='dotted',label='Baseline')
-                mainplot.plot([minint,minint],[0,maxt],'lower',color='blue',linestyle='dotted')
-                mainplot.plot([maxint,maxint],[0,maxt],'upper',color='blue',linestyle='dotted')
-                mainplot.draw()
+                if tempcount == 0:
+                    minorplot = plotter('Intensity Mask',logger)
+                    minorplot.open((1,1),x1label,ylabel)
+                    tempcount = 1
+                    print('minor first')
+                else:
+                    print('minor else')
+                    minorplot.resetplot('Intensity Mask')
+                    minorplot.formats(x1label,ylabel)
+                minorplot.plot(spectra_x,spectra_blcorr,'data',color='black',linestyle='steps',label='Data')
+                minorplot.plot([min(spectra_x),max(spectra_x)],[0,0],'bottom',color='red',linestyle='dotted',label='Baseline')
+                minorplot.plot([minint,minint],[0,maxt],'lower',color='blue',linestyle='dotted')
+                minorplot.plot([maxint,maxint],[0,maxt],'upper',color='blue',linestyle='dotted')
+                minorplot.draw()
                 outfilename_iter +=1
-                _TEMPNAME = "Final.{}_{}.pdf".format(outfilename,outfilename_iter)
-                plt.savefig(_TEMPNAME)
+                _TEMPNAME = "{}_{}.final.pdf".format(outfilename,outfilename_iter)
+                minorplot.save(_TEMPNAME)
                 plt.show()
                 autoask = logger.pyinput('(y or [RET]/n or [SPACE]) Is this acceptable? ')
                 if (autoask.lower() != 'y') and (autoask != ''):
                     retry = total_num
                     total_num = total_num -1
                     logger.failure("retrying....")
-                plt.clf()
             
         if retry == -99:
             # intensity
