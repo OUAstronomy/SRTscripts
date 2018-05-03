@@ -259,19 +259,6 @@ if __name__ == "__main__":
     _SYSTEM_("sed -i '1d' " + datafile)
     data = ascii.read(datafile)
 
-    # version control
-    #############################################################################
-    try:
-        _VLINE_ = first.split('\n')[0].split(':')[1].split('...')[0]
-        assert _VLINE_ == __version__
-    except AssertionError:
-        logger.warning('Input file version {} doesn\'t match programs version {}'.format(_VLINE_,__version__))
-        _A_ = logger.waiting(auto,seconds=0)
-        if (_A_ == ' ') or (_A_.lower() == 'n'):
-            exit()
-        else:
-            logger.message('Continuing...')
-
     # to verify correct input
     #############################################################################
     logger.header2("Will reduce these ({}) sources: {}".format(len(first_line),"|".join(first_line)))
