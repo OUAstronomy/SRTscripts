@@ -623,6 +623,7 @@ if __name__ == "__main__":
 
         #print('Made it to intensity')
         autoask = 'y'
+    
         try:
             if minint > 0:
                 pass
@@ -678,6 +679,22 @@ if __name__ == "__main__":
                         intensity_mask = [int(x) for x in intensity_mask]
 
                         # draw and reset
+                        try:
+                            if minint > 0:
+                                pass
+                        except:
+                            minint = min(spectra_x)
+                        try:
+                            if maxint > 0:
+                                pass
+                        except:
+                            maxint = max(spectra_x)
+                        try:
+                            if maxt > 0:
+                                pass
+                        except:
+                            maxint = max(spectra_y)
+
                         minint=min(spectra_x[intensity_mask])
                         maxint=max(spectra_x[intensity_mask])
                         
