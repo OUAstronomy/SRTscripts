@@ -633,6 +633,11 @@ if __name__ == "__main__":
                 pass
         except:
             maxint = max(spectra_x)
+        try:
+            if maxt > 0:
+                pass
+        except:
+            maxint = max(spectra_y)
 
 
         if (total_num == 0) or (retry != -99):
