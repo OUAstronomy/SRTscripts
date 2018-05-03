@@ -559,15 +559,6 @@ if __name__ == "__main__":
             pass
 
         if (total_num == 0) or (retry != -99):
-            mainplot.formats(x1label,ylabel)
-            mainplot.plot(spectra_x,spectra_blcorr,'corrected',color='black',linestyle='steps',label='corrected')
-            mainplot.plot([minvel,maxvel],[0,0],'flat',color='red',linestyle='steps',label='flat baseline')
-            mainplot.limits(ylim=(-1,1.2*max(spectra_blcorr)))
-            mainplot.draw()
-            outfilename_iter +=1
-            _TEMPNAME = "{}_{}.pdf".format(outfilename,outfilename_iter)
-            _TEMP3_.append(_TEMPNAME)
-            mainplot.save(_TEMPNAME)
 
             # Final correction plot 
             
@@ -575,6 +566,7 @@ if __name__ == "__main__":
             mainplot.formats(x1label,ylabel)
             mainplot.limits(xlim=(minvel,maxvel),ylim=(mint-1,maxt * 1.1))
             mainplot.plot(spectra_x,spectra_blcorr,'data',color='black',linestyle='steps',label='data')
+            mainplot.plot([minvel,maxvel],[0,0],'flat',color='red',linestyle='steps',label='flat baseline')
             mainplot.draw()
             outfilename_iter +=1
             _TEMPNAME = "{}_{}.pdf".format(outfilename,outfilename_iter)
@@ -672,7 +664,7 @@ if __name__ == "__main__":
                         interactive.draw()
                         # recovering intensity of line 
                         temp = []
-                        intensity_mask_array = lasso.selection('data')
+                        intensity_mask_array = interactive.selection('data')
                         intensity_mask = []
 
                         for i in range(len(intensity_mask_array)):
@@ -728,6 +720,7 @@ if __name__ == "__main__":
                 plt.close('all')
                 plt.clf()
                 plt.close()
+                tempcount = 0
             retry = -99
 
             # showing Intensity Mask
@@ -763,9 +756,9 @@ if __name__ == "__main__":
                     minorplot = plotter('Intensity Mask',logger)
                     minorplot.open((1,1),x1label,ylabel)
                     tempcount = 1
-                    print('minor first')
+                    #print('minor first')
                 else:
-                    print('minor else')
+                    #print('minor else')
                     minorplot.resetplot('Intensity Mask')
                     minorplot.formats(x1label,ylabel)
                 minorplot.plot(spectra_x,spectra_blcorr,'data',color='black',linestyle='steps',label='Data')
