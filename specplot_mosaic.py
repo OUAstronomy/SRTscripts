@@ -623,6 +623,17 @@ if __name__ == "__main__":
 
         #print('Made it to intensity')
         autoask = 'y'
+        try:
+            if minint > 0:
+                pass
+        except:
+            minint = min(spectra_x)
+        try:
+            if maxint > 0:
+                pass
+        except:
+            maxint = max(spectra_x)
+
 
         if (total_num == 0) or (retry != -99):
             # Intensity line estimate
