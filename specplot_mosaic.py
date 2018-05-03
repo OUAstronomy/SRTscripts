@@ -718,7 +718,7 @@ if __name__ == "__main__":
             mainplot.plot([maxint,maxint],[0,maxt],'upper',color='blue',linestyle='dotted')
             mainplot.draw()
             outfilename_iter +=1
-            _TEMPNAME = "Final.{}_{}.pdf".format(outfilename,outfilename_iter)
+            _TEMPNAME = "{}_{}.final.pdf".format(outfilename,outfilename_iter)
             mainplot.save(_TEMPNAME)
             mainplot.draw()
             logger.waiting(auto)
