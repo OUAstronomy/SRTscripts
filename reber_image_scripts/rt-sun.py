@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 import numpy as np
+import matplotlib as mlab
+mlab.use('Agg')
 from matplotlib import font_manager
 import matplotlib.pyplot as plt
 import os
@@ -53,7 +55,7 @@ if args.sp:
     ##############################################################################
     # getting data
     ##############################################################################
-    os.system('cp ~/sun-current.dat .')
+    os.system('cp -L ~/sun-current.dat .')
     os.system('python metaparse.py -i sun-current.dat -o sun-current-reduced.dat --auto -l metaparse.log -v0')
     data = np.loadtxt("sun-current-reduced.dat",skiprows=2,dtype=str)
 
