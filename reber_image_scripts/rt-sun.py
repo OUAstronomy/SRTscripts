@@ -25,6 +25,7 @@ parser.add_argument('-rp',dest='rp',action='store_true',help='refresh the long p
 args = parser.parse_args()
 cwd = os.getcwd()
 os.chdir('/home/jjtobin/RealTime-Sun/')
+ncwd = os.getcwd()
 if (not args.sp) and (not args.lp):
     print('Requires -sp (single day plotting) or -lp (for all plotting)')
     exit(0)
@@ -55,7 +56,23 @@ if args.sp:
     ##############################################################################
     # getting data
     ##############################################################################
-    os.system('cp -L ~/sun-current.dat .')
+    # determine file 'newness'
+    try:
+        ndatafile   = os.readlink('/home/jjtobin/sun-current.dat')
+        cdatafile   = os.path.join(ncwd,'sun-current.dat')
+        newdata     = os.path.getmtime(ndatafile)
+        currentdata = os.path.getmtime(cdatafile)
+    except:
+        exit(0)
+    # make sure file isn't blank
+    if os.path.getsize(cdatafile) < 10:
+        exit(0)
+    # copy over file if newer than current data
+    if (currentdata < newdata):
+        os.system('cp -L ~/sun-current.dat .')
+    else:
+        exit(0)
+    # now begin run
     os.system('python metaparse.py -i sun-current.dat -o sun-current-reduced.dat --auto -l metaparse.log -v0')
     data = np.loadtxt("sun-current-reduced.dat",skiprows=2,dtype=str)
 
@@ -121,6 +138,7 @@ if args.lp:
         mydirstart='/home/jjtobin/srtn/data/sun/'
         myfiledest='/home/jjtobin/RealTime-Sun/sun-current.all.dat'
         allfiles= list_files(mydirstart)
+        print('Number of files: {}. Time est: {}s'.format(len(allfiles),len(allfiles)*10))
         os.system('python metaparse.py -i "{}" -o sun-current-reduced.all.metaparse.dat ' \
                    '--auto -l metaparse.log -v 0'.format(allfiles))
         os.system('rm -f /tmp/sun-current-reduced.all.metaparse.dat')
