@@ -16,6 +16,10 @@ Misc  :
 from argparse import ArgumentParser
 from os import system as _SYSTEM_
 from os.path import isfile as _ISFILE_
+from sys import version_info
+
+import temp as tf
+tempd = tf.TemporaryDirectory
 from glob import glob
 import time
 
@@ -93,70 +97,72 @@ def info_parse(input_file, output_file):
             f.write("{}\n".format(_I_))
 
 def _main_(args):
-    instring = args.infile
-    tmpname = args.fout
-    auto = args.auto
-    logfile = args.log
-    verbosity = args.verb
-    # Set up message logger            
-    if not logfile:
-        logfile = ('{}_{}.log'.format(__file__[:-3],time.time()))
-    if verbosity >= 3:
-        logger = utilities.Messenger(verbosity=verbosity, add_timestamp=True,logfile=logfile)
-    else:
-        logger = utilities.Messenger(verbosity=verbosity, add_timestamp=False,logfile=logfile)
-    logger.header2("Starting {}....".format(__file__[:-3]))
-
-    logger.header2('This program will create and remove numerous temporary files for debugging.')
-    logger.debug("Commandline Arguments: {}".format(args))
-
-    _TEMP_ = str(time.time())
-    _TEMP0_ = 'TEMPORARY_RM_ERROR_'+_TEMP_+'.txt'
-    _TEMP1_ = 'TEMPORARY_METADATA_'+_TEMP_+'.txt'
-    _TEMP2_ = 'TEMPORARY_METADATA2_'+_TEMP_+'.txt'
-    logger._REMOVE_(_TEMP_)
-
-    # Read in the files
-    if _ISFILE_(tmpname):
-        logger.warn("Will overwrite:  {}".format(tmpname))
-    logger.waiting(auto,seconds=0)
-
-    if len(instring.split(',')) < 2:
-        origfiles = [f.strip('[').strip(']').strip(' ') for f in glob(instring+'*') if _ISFILE_(f)]
-        if origfiles == []:
-            origfiles.append(instring)
-    else:
-        origfiles = [x.strip('[').strip(']').strip(' ') for x in instring.split(',')]
-
-    logger.success('Files to be analyzed: {}'.format(','.join(origfiles)))
-    logger.waiting(auto,seconds=0)
-
-    logger.waiting(auto,seconds=0)
-
-    for _NUM_,_FILE_ in enumerate(origfiles):
-        # starting
-        print(_FILE_)
-        logger.header2('#################################')
-        logger.header2("Running file: {}".format(_FILE_))
-        prep(_FILE_,_TEMP0_)
-
-        # running parse
-        info_parse(_TEMP0_,_TEMP1_)
-        logger.success("Finished file: {}".format(_FILE_))
-        logger.header2('#################################')
-        if _NUM_ == 0:
-            _SYSTEM_('cat {} >> {}'.format(_TEMP1_,_TEMP2_))
+    with tempd() as TMPD:
+        instring = args.infile
+        tmpname = args.fout
+        auto = args.auto
+        if not args.log:
+            logfile = __file__[:-3].split('/')[-1]
         else:
-            _SYSTEM_('sed -i "1d" {}'.format(_TEMP1_))
-            _SYSTEM_('cat {} >> {}'.format(_TEMP1_,_TEMP2_))
+            logfile = args.log
+        verbosity = args.verb
+        # Set up message logger            
+        if not logfile:
+            logfile = (TMPD + '/{}_{}.log'.format(logfile,time.time()))
+        if verbosity >= 3:
+            logger = utilities.Messenger(verbosity=verbosity, add_timestamp=True,logfile=logfile)
+        else:
+            logger = utilities.Messenger(verbosity=verbosity, add_timestamp=False,logfile=logfile)
+        logger.header2("Starting {}....".format(logfile))
 
-    with open(_TEMP2_, 'r') as original: data = original.read()
-    with open(_TEMP2_, 'w') as modified: modified.write('Version: {}...Made from files: {}\n{}'.format(__version__,origfiles ,data))
-    _SYSTEM_("mv -f " + _TEMP2_ + " " + tmpname)
+        logger.header2('This program will create and remove numerous temporary files for debugging.')
+        logger.debug("Commandline Arguments: {}".format(args))
 
-    logger.success("Finished with all files: {}".format(' | '.join(origfiles)))
-    logger.header2("Made file: {} and logfile: {}".format(tmpname,logfile)) 
-    logger._REMOVE_(_TEMP_)
+        _TEMP_ = str(time.time())
+        _TEMP0_ = TMPD+'/TEMPORARY_RM_ERROR_'+_TEMP_+'.txt'
+        _TEMP1_ = TMPD+'/TEMPORARY_METADATA_'+_TEMP_+'.txt'
+        _TEMP2_ = TMPD+'/TEMPORARY_METADATA2_'+_TEMP_+'.txt'
+
+        # Read in the files
+        if _ISFILE_(tmpname):
+            logger.warn("Will overwrite:  {}".format(tmpname))
+        logger.waiting(auto,seconds=0)
+
+        if len(instring.split(',')) < 2:
+            origfiles = [f.strip('[').strip(']').strip(' ') for f in glob(instring+'*') if _ISFILE_(f)]
+            if origfiles == []:
+                origfiles.append(instring)
+        else:
+            origfiles = [x.strip('[').strip(']').strip(' ') for x in instring.split(',')]
+
+        logger.success('Files to be analyzed: {}'.format(','.join(origfiles)))
+        logger.waiting(auto,seconds=0)
+
+        logger.waiting(auto,seconds=0)
+
+        for _NUM_,_FILE_ in enumerate(origfiles):
+            # starting
+            print(_FILE_)
+            logger.header2('#################################')
+            logger.header2("Running file: {}".format(_FILE_))
+            prep(_FILE_,_TEMP0_)
+
+            # running parse
+            info_parse(_TEMP0_,_TEMP1_)
+            logger.success("Finished file: {}".format(_FILE_))
+            logger.header2('#################################')
+            if _NUM_ == 0:
+                _SYSTEM_('cat {} >> {}'.format(_TEMP1_,_TEMP2_))
+            else:
+                _SYSTEM_('sed -i "1d" {}'.format(_TEMP1_))
+                _SYSTEM_('cat {} >> {}'.format(_TEMP1_,_TEMP2_))
+
+        with open(_TEMP2_, 'r') as original: data = original.read()
+        with open(_TEMP2_, 'w') as modified: modified.write('Version: {}...Made from files: {}\n{}'.format(__version__,origfiles ,data))
+        _SYSTEM_("mv -f " + _TEMP2_ + " " + tmpname)
+
+        logger.success("Finished with all files: {}".format(' | '.join(origfiles)))
+        logger.header2("Made file: {} and logfile: {}".format(tmpname,logfile)) 
 
 # main function
 if __name__ == "__main__":
@@ -176,7 +182,7 @@ if __name__ == "__main__":
     parser = ArgumentParser(description=description)
     parser.add_argument('-i', '--input', type=str, help=in_help, dest='infile',required=True)
     parser.add_argument('-o','--output',type=str, help=f_help,dest='fout',\
-        default='master_metaparse_{}_v{}.txt'.format(time.time(),__version__))
+        default='metaparse_{}_v{}.txt'.format(time.time(),__version__))
     parser.add_argument('--auto',action="store_true", help=a_help,dest='auto')
     parser.add_argument('-l', '--logger',type=str, help=log_help,dest='log')
     parser.add_argument('-v','--verbosity', help=v_help,default=2,dest='verb',type=int)

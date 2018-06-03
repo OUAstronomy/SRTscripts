@@ -24,6 +24,9 @@ from srtutilities import *
 # import standard modules
 from sys import version_info,exit
 from os import system as _SYSTEM_
+
+import temp as tf
+tempd = tf.TemporaryDirectory
 from argparse import ArgumentParser
 from os.path import isfile as _ISFILE_
 from glob import glob
@@ -157,155 +160,152 @@ if __name__ == "__main__":
 
     # Get the arguments
     args = parser.parse_args()
-    instring = args.infile
-    tmpname = 'specparse.' + args.fout
-    _LINE_ = args.line
-    auto = args.auto
-    logfile = args.log
-    verbosity = args.verb
+    with tempd() as TMPD:
+        instring = args.infile
+        tmpname = 'specparse.' + args.fout
+        _LINE_ = args.line
+        auto = args.auto
+        logfile = args.log
+        verbosity = args.verb
 
-    # Set up message logger            
-    if not logfile:
-        logfile = ('{}_{}.log'.format(__file__[:-3],time.time()))
-    if verbosity >= 3:
-        logger = utilities.Messenger(verbosity=verbosity, add_timestamp=True,logfile=logfile)
-    else:
-        logger = utilities.Messenger(verbosity=verbosity, add_timestamp=False,logfile=logfile)
-    logger.header1("Starting {}....".format(__file__[:-3]))
-    logger.debug("Commandline Arguments: {}".format(args))
+        # Set up message logger            
+        if not logfile:
+            logfile = (TMPD + '/{}_{}.log'.format(__file__[:-3],time.time()))
+        if verbosity >= 3:
+            logger = utilities.Messenger(verbosity=verbosity, add_timestamp=True,logfile=logfile)
+        else:
+            logger = utilities.Messenger(verbosity=verbosity, add_timestamp=False,logfile=logfile)
+        logger.header1("Starting {}....".format(__file__[:-3]))
+        logger.debug("Commandline Arguments: {}".format(args))
 
-    logger.header2('This program will create and remove numerous temporary files for debugging.')
+        logger.header2('This program will create and remove numerous temporary files for debugging.')
 
-    _SPECTRA_ = LINES[_LINE_]
+        _SPECTRA_ = LINES[_LINE_]
 
-    # Read in the files
-    if _ISFILE_(tmpname):
-        logger.warn("Will overwrite:  {}".format(tmpname))
-    logger.waiting(auto,seconds=0)
-    files = [f for f in glob(instring+'*') if _ISFILE_(f)]
-    if files == []:
-        files.append(instring)
+        # Read in the files
+        if _ISFILE_(tmpname):
+            logger.warn("Will overwrite:  {}".format(tmpname))
+        logger.waiting(auto,seconds=0)
+        files = [f for f in glob(instring+'*') if _ISFILE_(f)]
+        if files == []:
+            files.append(instring)
 
-    logger.success('Files to be analyzed: {}'.format(','.join(files)))
-    logger.waiting(auto,seconds=0)
+        logger.success('Files to be analyzed: {}'.format(','.join(files)))
+        logger.waiting(auto,seconds=0)
 
-    origfiles = files
-    _TEMP_ = str(time.time())
-    _TEMP0_ = 'TEMPORARY_RM_ERROR_'+_TEMP_+'.txt'
-    _TEMP1_ = 'TEMPORARY_1_SOURCE_'+_TEMP_+'.txt'
-    _TEMP2_ = 'TEMPORARY__SOURCES_'+_TEMP_+'.txt'
-    logger._REMOVE_(_TEMP_)
+        origfiles = files
+        _TEMP_ = str(time.time())
+        _TEMP0_ = TMPD + '/TEMPORARY_RM_ERROR_'+_TEMP_+'.txt'
+        _TEMP1_ = TMPD + '/TEMPORARY_1_SOURCE_'+_TEMP_+'.txt'
+        _TEMP2_ = TMPD + '/TEMPORARY__SOURCES_'+_TEMP_+'.txt'
+        logger._REMOVE_(_TEMP_)
 
-    # initialize arrays and constants
-    all_first = []
-    filenaming = []
-    count = 0
-    first_line= []
-    ndata = []
-    pdata = []
+        # initialize arrays and constants
+        all_first = []
+        filenaming = []
+        count = 0
+        first_line= []
+        ndata = []
+        pdata = []
 
-    # cycle through all files
-    for filenum in range(len(files)):
-        source_list = []
-        position = []
-         
-        # starting
-        logger.header2("#################################")
-        logger.message("Running file: {}".format(origfiles[filenum]))
-        # creating temp file and removing errors
-        k = prep(origfiles[filenum],_TEMP0_,returndata=True)
+        # cycle through all files
+        for filenum in range(len(files)):
+            source_list = []
+            position = []
+             
+            # starting
+            logger.header2("#################################")
+            logger.message("Running file: {}".format(origfiles[filenum]))
+            # creating temp file and removing errors
+            k = prep(origfiles[filenum],_TEMP0_,returndata=True)
 
-        # creating source list
-        for i,j in enumerate(k):
-            if (i%4) == 0:
-                tmp = j[j.index('source')+1]
-                source_list.append(tmp)
-        for i,j in enumerate(source_list):
-            if i != (len(source_list)-1):
-                if source_list[i+1] == source_list[i]:
-                    if i == (len(source_list)-2):
-                        position.append(i+1)
-                        i += 1
-                else:
-                    position.append(i)
-                    if i == (len(source_list)-2):
-                        position.append(i+1)
-                        i += 1
-        if (len(source_list) == 0) or (not position):
-            position = [0,]
-
-        # makes sure to not calculate at stow
-        newindex = [i for i,x in enumerate(source_list) if x == 'at_stow']
-
-        for i in position:
-            if not i in newindex:
-                logger.message('Starting source: {}'.format(source_list[i]))
-                with open(_TEMP1_,'w') as p:
-                    p.seek(0)
-                    for j in range(4):
-                        p.write(' '.join(k[4*i + j]))
-                        p.write('\n')
-                tmp = source_list[i]
-                # file handling
-                if (i==position[0]) and ((filenum == 0) or (filenum == (len(files)-1))):
-                    filenaming.append(source_list[position[0]])
-
-                outname0 = "h1spec_" + source_list[i] + '_'  + _TEMP1_
-                outname1 = "h1spec_sort_" + source_list[i] + '_' + _TEMP1_
-                logger._REMOVE_(outname0)
-                logger._REMOVE_(outname1)
-
-                # run spectrum parse command
-                try:
-                    spectrum_parse(_TEMP1_,_SPECTRA_,outname0)
-                except ValueError:
-                    logger.failure('Error running spectrum_parse command on: {} on source: {}'.format(origfiles[filenum],source_list[i]))
-
-                # copy to new file and remove sources
-                _SYSTEM_("cp -f " + outname0+ " " + outname1)
-                _SYSTEM_("sed -i '1,2d' " + outname1)
-
-                # intelligently concat files
-                try:              
-                    if count == 0:
-                        pdata = ascii.read(outname1)
-                        #print(data)
-                        count = 1
+            # creating source list
+            for i,j in enumerate(k):
+                if (i%4) == 0:
+                    tmp = j[j.index('source')+1]
+                    source_list.append(tmp)
+            for i,j in enumerate(source_list):
+                if i != (len(source_list)-1):
+                    if source_list[i+1] == source_list[i]:
+                        if i == (len(source_list)-2):
+                            position.append(i+1)
+                            i += 1
                     else:
-                        ndata = ascii.read(outname1)
-                        #print(ndata)
-                        pdata.add_columns([ndata['freq'],ndata['vel'],ndata['vel_vlsr'],ndata['Tant']],rename_duplicate=True)
-                    count = 1
-                except ValueError:
-                    logger.failure("Error in concat:")
-                    logger.waiting(auto,seconds=0)
-                    logger.warn('Check file {}'.format(outname1))
-                    exit('Quitting Program')
+                        position.append(i)
+                        if i == (len(source_list)-2):
+                            position.append(i+1)
+                            i += 1
+            if (len(source_list) == 0) or (not position):
+                position = [0,]
 
-                logger.success("Finished source: " + source_list[i])
-                first_line.append(source_list[i])
+            # makes sure to not calculate at stow
+            newindex = [i for i,x in enumerate(source_list) if x == 'at_stow']
 
-        ascii.write(pdata,_TEMP2_)
+            for i in position:
+                if not i in newindex:
+                    logger.message('Starting source: {}'.format(source_list[i]))
+                    with open(_TEMP1_,'w') as p:
+                        p.seek(0)
+                        for j in range(4):
+                            p.write(' '.join(k[4*i + j]))
+                            p.write('\n')
+                    tmp = source_list[i]
+                    # file handling
+                    if (i==position[0]) and ((filenum == 0) or (filenum == (len(files)-1))):
+                        filenaming.append(source_list[position[0]])
 
-        logger.success("Finished file: " + origfiles[filenum])
-        all_first.append(','.join(first_line))
+                    outname0 = "spec_" + source_list[i] + '_'  + _TEMP1_
+                    outname1 = "spec_sort_" + source_list[i] + '_' + _TEMP1_
+                    logger._REMOVE_(outname0)
+                    logger._REMOVE_(outname1)
 
-    outname3 = tmpname
+                    # run spectrum parse command
+                    try:
+                        spectrum_parse(_TEMP1_,_SPECTRA_,outname0)
+                    except ValueError:
+                        logger.failure('Error running spectrum_parse command on: {} on source: {}'.format(origfiles[filenum],source_list[i]))
 
-    logger._REMOVE_(outname3)
-    logger._REMOVE_(outname0)
-    logger._REMOVE_(outname1)
-    with open(_TEMP2_, 'r') as original: data = original.read()
-    with open(_TEMP2_, 'w') as modified: modified.write('Version:{}...Made from files: {}\n{}\n{}\n'.format(__version__,','.join(files),' '.join(first_line),data))
-    _SYSTEM_('cp -f ' + _TEMP2_ + ' ' + outname3)
-    logger._REMOVE_(_TEMP_)
+                    # copy to new file and remove sources
+                    _SYSTEM_("cp -f " + outname0+ " " + outname1)
+                    _SYSTEM_("sed -i '1,2d' " + outname1)
 
-    # finished
-    logger.header2("#################################")
-    logger.success("Finished with all.")
-    logger.debug("These are the sources processed: {}".format('|'.join(all_first)))
-    
-    logger.header1("Made files: {} and logfile: {}".format(outname3,logfile)) 
+                    # intelligently concat files
+                    try:              
+                        if count == 0:
+                            pdata = ascii.read(outname1)
+                            #print(data)
+                            count = 1
+                        else:
+                            ndata = ascii.read(outname1)
+                            #print(ndata)
+                            pdata.add_columns([ndata['freq'],ndata['vel'],ndata['vel_vlsr'],ndata['Tant']],rename_duplicate=True)
+                        count = 1
+                    except ValueError:
+                        logger.failure("Error in concat:")
+                        logger.waiting(auto,seconds=0)
+                        logger.warn('Check file {}'.format(outname1))
+                        exit('Quitting Program')
+
+                    logger.success("Finished source: " + source_list[i])
+                    first_line.append(source_list[i])
+
+            ascii.write(pdata,_TEMP2_)
+
+            logger.success("Finished file: " + origfiles[filenum])
+            all_first.append(','.join(first_line))
+
+        outname3 = tmpname
+
+        with open(_TEMP2_, 'r') as original: data = original.read()
+        with open(_TEMP2_, 'w') as modified: modified.write('Version:{}...Made from files: {}\n{}\n{}\n'.format(__version__,','.join(files),' '.join(first_line),data))
+        _SYSTEM_('cp -f ' + _TEMP2_ + ' ' + outname3)
+
+        # finished
+        logger.header2("#################################")
+        logger.success("Finished with all.")
+        logger.debug("These are the sources processed: {}".format('|'.join(all_first)))
+        
+        logger.header1("Made files: {} and logfile: {}".format(outname3,logfile)) 
 
     #############
     # end of code
